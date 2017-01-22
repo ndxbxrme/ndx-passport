@@ -20,6 +20,7 @@ module.exports = (ndx) ->
   validPassword = (password, localPassword) ->
     bcrypt.compareSync password, localPassword
   ndx.postAuthenticate = (req, res, next) ->
+    console.log 'post authenticate'
     setCookie req, res
     res.redirect '/'
   ndx.passport.serializeUser (user, done) ->
@@ -69,10 +70,11 @@ module.exports = (ndx) ->
   , (req, email, password, done) ->
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
-      return done(null, false, req.flash('signupMessage', 'That email is already taken.'))
+      return done(null, false, req.flash('message', 'That email is already taken.'))
     else
       newUser = 
         _id: ObjectID.generate()
+        email: email
         local:
           email: email
           password: generateHash password
@@ -83,21 +85,23 @@ module.exports = (ndx) ->
     passwordField: 'password'
     passReqToCallback: true
   , (req, email, password, done) ->
+    console.log 'local-login'
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
       if not validPassword password, users[0].local.password
-        return done(null, false, req.flash('loginMessage', 'Wrong password'))
+        return done(null, false, req.flash('message', 'Wrong password'))
       return done(null, users[0])
     else
-      return done(null, false, req.flash('loginMessage', 'No user found'))
-  ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup')
+      console.log 'no user'
+      return done(null, false, req.flash('message', 'No user found'))
+  ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
-  ndx.app.post '/api/login', ndx.passport.authenticate('local-login')
+  ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
   ndx.app.get '/api/connect/local', (req, res) ->
     #send flash message
     return
-  ndx.app.post '/api/connect/local', ndx.passport.authorize('local-signup')
+  ndx.app.post '/api/connect/local', ndx.passport.authorize('local-signup', failureRedirect: '/api/badlogin')
   ndx.app.get '/api/unlink/local', (req, res) ->
     user = req.user
     user.local.email = undefined
@@ -106,4 +110,8 @@ module.exports = (ndx) ->
       res.redirect '/profile'
       return
     return
+  ndx.app.get '/api/badlogin', (req, res) ->
+    res.json
+      error: true
+      message: req.flash 'message'
   

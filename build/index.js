@@ -27,6 +27,7 @@
       return bcrypt.compareSync(password, localPassword);
     };
     ndx.postAuthenticate = function(req, res, next) {
+      console.log('post authenticate');
       setCookie(req, res);
       return res.redirect('/');
     };
@@ -83,10 +84,11 @@
       var newUser, users;
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
-        return done(null, false, req.flash('signupMessage', 'That email is already taken.'));
+        return done(null, false, req.flash('message', 'That email is already taken.'));
       } else {
         newUser = {
           _id: ObjectID.generate(),
+          email: email,
           local: {
             email: email,
             password: generateHash(password)
@@ -102,27 +104,41 @@
       passReqToCallback: true
     }, function(req, email, password, done) {
       var users;
+      console.log('local-login');
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
         if (!validPassword(password, users[0].local.password)) {
-          return done(null, false, req.flash('loginMessage', 'Wrong password'));
+          return done(null, false, req.flash('message', 'Wrong password'));
         }
         return done(null, users[0]);
       } else {
-        return done(null, false, req.flash('loginMessage', 'No user found'));
+        console.log('no user');
+        return done(null, false, req.flash('message', 'No user found'));
       }
     }));
-    ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup'), ndx.postAuthenticate);
-    ndx.app.post('/api/login', ndx.passport.authenticate('local-login'), ndx.postAuthenticate);
+    ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup', {
+      failureRedirect: '/api/badlogin'
+    }), ndx.postAuthenticate);
+    ndx.app.post('/api/login', ndx.passport.authenticate('local-login', {
+      failureRedirect: '/api/badlogin'
+    }), ndx.postAuthenticate);
     ndx.app.get('/api/connect/local', function(req, res) {});
-    ndx.app.post('/api/connect/local', ndx.passport.authorize('local-signup'));
-    return ndx.app.get('/api/unlink/local', function(req, res) {
+    ndx.app.post('/api/connect/local', ndx.passport.authorize('local-signup', {
+      failureRedirect: '/api/badlogin'
+    }));
+    ndx.app.get('/api/unlink/local', function(req, res) {
       var user;
       user = req.user;
       user.local.email = void 0;
       user.local.password = void 0;
       user.save(function(err) {
         res.redirect('/profile');
+      });
+    });
+    return ndx.app.get('/api/badlogin', function(req, res) {
+      return res.json({
+        error: true,
+        message: req.flash('message')
       });
     });
   };
