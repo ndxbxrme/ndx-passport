@@ -124,6 +124,37 @@
         });
       }
     });
+    ndx.app.post('/api/auth/token', function(req, res) {
+      var cparts, credentials, parts, scheme, token, users;
+      token = '';
+      if (req.headers && req.headers.authorization) {
+        parts = req.headers.authorization.split(' ');
+        if (parts.length === 2) {
+          scheme = parts[0];
+          credentials = parts[1];
+          if (/^Basic$/i.test(scheme)) {
+            cparts = credentials.split(':');
+            if (cparts.length === 2) {
+              users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]);
+              if (users && users.length) {
+                if (validPassword(cparts[1], users[0].local.password)) {
+                  token = generateToken(users[0]._id, req.ip);
+                }
+              }
+            }
+          }
+        }
+      }
+      if (token) {
+        return res.json({
+          accessToken: token
+        });
+      } else {
+        return res.json({
+          error: 'Not authorized'
+        });
+      }
+    });
     ndx.passport.use('local-signup', new LocalStrategy({
       usernameField: 'email',
       passwordField: 'password',
