@@ -10,10 +10,15 @@ module.exports = (ndx) ->
   session = require 'express-session'
   cookieParser = require 'cookie-parser'
 
+  generateToken = (userId, ip) ->
+    text = userId + '||' + new Date().toString()
+    text = crypto.Rabbit.encrypt(text, ip).toString()
+    text = crypto.Rabbit.encrypt(text, ndx.settings.SESSION_SECRET).toString()
+    text
+    
   setCookie = (req, res) ->
     if req.user
-      cookieText = req.user._id + '||' + new Date().toString()
-      cookieText = crypto.Rabbit.encrypt(cookieText, ndx.settings.SESSION_SECRET).toString()
+      cookieText = generateToken req.user._id, req.ip
       res.cookie 'token', cookieText, maxAge: 7 * 24 * 60 * 60 * 1000  
   generateHash = (password) ->
     bcrypt.hashSync password, bcrypt.genSaltSync(8), null
@@ -37,19 +42,31 @@ module.exports = (ndx) ->
   .use ndx.passport.initialize()
   .use ndx.passport.session()
   .use (req, res, next) ->
-    req.user = null
-    if req.cookies.token and not ndx.database.maintenance()
+    if not ndx.database.maintenance()
+      token = ''
+      if req.cookies and req.cookies.token
+        token = req.cookies.token
+      else if req.headers and req.headers.authorization
+        parts = req.headers.authorization.split ' '
+        if parts.length is 2
+          scheme = parts[0]
+          credentials = parts[1]
+          if /^Bearer$/i.test scheme
+            token = credentials
       decrypted = ''
       try
-        decrypted = crypto.Rabbit.decrypt(req.cookies.token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
+        decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
+        if decrypted
+          decrypted = crypto.Rabbit.decrypt(token, req.id).toString(crypto.enc.Utf8)
       if decrypted.indexOf('||') isnt -1
         bits = decrypted.split '||'
         if bits.length is 2
           d = new Date bits[1]
           if d.toString() isnt 'Invalid Date'
+            #todo - add timeout for date
             users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]
             if users and users.length
-              req.user = users[0]
+              req.user = ndx.extend req.user, users[0]
               setCookie req, res
     next()
 

@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, bcrypt, cookieParser, crypto, flash, generateHash, session, setCookie, validPassword;
+    var LocalStrategy, ObjectID, bcrypt, cookieParser, crypto, flash, generateHash, generateToken, session, setCookie, validPassword;
     ndx.passport = require('passport');
     flash = require('connect-flash');
     LocalStrategy = require('passport-local').Strategy;
@@ -10,11 +10,17 @@
     crypto = require('crypto-js');
     session = require('express-session');
     cookieParser = require('cookie-parser');
+    generateToken = function(userId, ip) {
+      var text;
+      text = userId + '||' + new Date().toString();
+      text = crypto.Rabbit.encrypt(text, ip).toString();
+      text = crypto.Rabbit.encrypt(text, ndx.settings.SESSION_SECRET).toString();
+      return text;
+    };
     setCookie = function(req, res) {
       var cookieText;
       if (req.user) {
-        cookieText = req.user._id + '||' + new Date().toString();
-        cookieText = crypto.Rabbit.encrypt(cookieText, ndx.settings.SESSION_SECRET).toString();
+        cookieText = generateToken(req.user._id, req.ip);
         return res.cookie('token', cookieText, {
           maxAge: 7 * 24 * 60 * 60 * 1000
         });
@@ -42,12 +48,27 @@
       saveUninitialized: true,
       resave: true
     })).use(flash()).use(ndx.passport.initialize()).use(ndx.passport.session()).use(function(req, res, next) {
-      var bits, d, decrypted, users;
-      req.user = null;
-      if (req.cookies.token && !ndx.database.maintenance()) {
+      var bits, credentials, d, decrypted, parts, scheme, token, users;
+      if (!ndx.database.maintenance()) {
+        token = '';
+        if (req.cookies && req.cookies.token) {
+          token = req.cookies.token;
+        } else if (req.headers && req.headers.authorization) {
+          parts = req.headers.authorization.split(' ');
+          if (parts.length === 2) {
+            scheme = parts[0];
+            credentials = parts[1];
+            if (/^Bearer$/i.test(scheme)) {
+              token = credentials;
+            }
+          }
+        }
         decrypted = '';
         try {
-          decrypted = crypto.Rabbit.decrypt(req.cookies.token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8);
+          decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8);
+          if (decrypted) {
+            decrypted = crypto.Rabbit.decrypt(token, req.id).toString(crypto.enc.Utf8);
+          }
         } catch (undefined) {}
         if (decrypted.indexOf('||') !== -1) {
           bits = decrypted.split('||');
@@ -56,7 +77,7 @@
             if (d.toString() !== 'Invalid Date') {
               users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]);
               if (users && users.length) {
-                req.user = users[0];
+                req.user = ndx.extend(req.user, users[0]);
                 setCookie(req, res);
               }
             }
