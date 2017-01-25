@@ -62,6 +62,27 @@ module.exports = (ndx) ->
     res.clearCookie 'token'
     res.redirect '/'
     return
+  ndx.app.post '/api/update-password', (req, res) ->
+    if req.user
+      if req.user.local
+        if validPassword req.body.oldPassword, req.user.local.password
+          ndx.database.exec 'UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
+            {
+              email: req.user.email
+              password: generateHash req.body.newPassword
+            }
+            req.user._id
+          ]
+          res.end 'OK'
+        else
+          res.json
+            error: 'Invalid password'
+      else
+        res.json
+          error: 'No local details'
+    else
+      res.json
+        error: 'Not logged in'
     
   ndx.passport.use 'local-signup', new LocalStrategy
     usernameField: 'email'

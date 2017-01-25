@@ -76,6 +76,33 @@
       res.clearCookie('token');
       res.redirect('/');
     });
+    ndx.app.post('/api/update-password', function(req, res) {
+      if (req.user) {
+        if (req.user.local) {
+          if (validPassword(req.body.oldPassword, req.user.local.password)) {
+            ndx.database.exec('UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
+              {
+                email: req.user.email,
+                password: generateHash(req.body.newPassword)
+              }, req.user._id
+            ]);
+            return res.end('OK');
+          } else {
+            return res.json({
+              error: 'Invalid password'
+            });
+          }
+        } else {
+          return res.json({
+            error: 'No local details'
+          });
+        }
+      } else {
+        return res.json({
+          error: 'Not logged in'
+        });
+      }
+    });
     ndx.passport.use('local-signup', new LocalStrategy({
       usernameField: 'email',
       passwordField: 'password',
