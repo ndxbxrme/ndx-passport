@@ -46,7 +46,7 @@
       secret: ndx.settings.SESSION_SECRET,
       saveUninitialized: true,
       resave: true
-    })).use(flash()).use(ndx.passport.initialize()).use(ndx.passport.session()).use('/api/*', function(req, res, next) {
+    })).use(flash()).use(ndx.passport.initialize()).use('/api/*', function(req, res, next) {
       var bits, credentials, d, decrypted, isCookie, parts, scheme, token, users;
       if (!ndx.database.maintenance()) {
         isCookie = false;

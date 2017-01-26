@@ -39,7 +39,6 @@ module.exports = (ndx) ->
     resave: true
   .use flash()
   .use ndx.passport.initialize()
-  .use ndx.passport.session()
   .use '/api/*', (req, res, next) ->
     if not ndx.database.maintenance()
       isCookie = false
