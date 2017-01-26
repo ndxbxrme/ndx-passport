@@ -33,7 +33,6 @@
       return bcrypt.compareSync(password, localPassword);
     };
     ndx.postAuthenticate = function(req, res, next) {
-      console.log('post authenticate');
       setCookie(req, res);
       return res.redirect('/');
     };
@@ -47,7 +46,7 @@
       secret: ndx.settings.SESSION_SECRET,
       saveUninitialized: true,
       resave: true
-    })).use(flash()).use(ndx.passport.initialize()).use(ndx.passport.session()).use(function(req, res, next) {
+    })).use(flash()).use(ndx.passport.initialize()).use(ndx.passport.session()).use('/api/*', function(req, res, next) {
       var bits, credentials, d, decrypted, isCookie, parts, scheme, token, users;
       if (!ndx.database.maintenance()) {
         isCookie = false;
@@ -69,7 +68,7 @@
         try {
           decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8);
           if (decrypted) {
-            decrypted = crypto.Rabbit.decrypt(token, req.id).toString(crypto.enc.Utf8);
+            decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8);
           }
         } catch (undefined) {}
         if (decrypted.indexOf('||') !== -1) {
@@ -79,7 +78,14 @@
             if (d.toString() !== 'Invalid Date') {
               users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]);
               if (users && users.length) {
-                req.user = ndx.extend(req.user, users[0]);
+                if (!req.user) {
+                  req.user = {};
+                }
+                if (Object.prototype.toString.call(req.user) === '[object Object]') {
+                  req.user = ndx.extend(req.user, users[0]);
+                } else {
+                  req.user = users[0];
+                }
                 if (isCookie) {
                   setCookie(req, res);
                 }
@@ -187,7 +193,6 @@
       passReqToCallback: true
     }, function(req, email, password, done) {
       var users;
-      console.log('local-login');
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
         if (!ndx.validPassword(password, users[0].local.password)) {
@@ -195,7 +200,6 @@
         }
         return done(null, users[0]);
       } else {
-        console.log('no user');
         return done(null, false, req.flash('message', 'No user found'));
       }
     }));

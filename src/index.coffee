@@ -25,7 +25,6 @@ module.exports = (ndx) ->
   ndx.validPassword = (password, localPassword) ->
     bcrypt.compareSync password, localPassword
   ndx.postAuthenticate = (req, res, next) ->
-    console.log 'post authenticate'
     setCookie req, res
     res.redirect '/'
   ndx.passport.serializeUser (user, done) ->
@@ -41,7 +40,7 @@ module.exports = (ndx) ->
   .use flash()
   .use ndx.passport.initialize()
   .use ndx.passport.session()
-  .use (req, res, next) ->
+  .use '/api/*', (req, res, next) ->
     if not ndx.database.maintenance()
       isCookie = false
       token = ''
@@ -59,7 +58,7 @@ module.exports = (ndx) ->
       try
         decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
         if decrypted
-          decrypted = crypto.Rabbit.decrypt(token, req.id).toString(crypto.enc.Utf8)
+          decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8)
       if decrypted.indexOf('||') isnt -1
         bits = decrypted.split '||'
         if bits.length is 2
@@ -68,7 +67,12 @@ module.exports = (ndx) ->
             #todo - add timeout for date
             users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]
             if users and users.length
-              req.user = ndx.extend req.user, users[0]
+              if not req.user
+                req.user = {}
+              if Object.prototype.toString.call(req.user) is '[object Object]'
+                req.user = ndx.extend req.user, users[0]
+              else
+                req.user = users[0]
               if isCookie
                 setCookie req, res
     next()
@@ -147,14 +151,12 @@ module.exports = (ndx) ->
     passwordField: 'password'
     passReqToCallback: true
   , (req, email, password, done) ->
-    console.log 'local-login'
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
       if not ndx.validPassword password, users[0].local.password
         return done(null, false, req.flash('message', 'Wrong password'))
       return done(null, users[0])
     else
-      console.log 'no user'
       return done(null, false, req.flash('message', 'No user found'))
   ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
