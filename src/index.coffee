@@ -10,7 +10,7 @@ module.exports = (ndx) ->
   session = require 'express-session'
   cookieParser = require 'cookie-parser'
 
-  generateToken = (userId, ip) ->
+  ndx.generateToken = (userId, ip) ->
     text = userId + '||' + new Date().toString()
     text = crypto.Rabbit.encrypt(text, ip).toString()
     text = crypto.Rabbit.encrypt(text, ndx.settings.SESSION_SECRET).toString()
@@ -18,11 +18,11 @@ module.exports = (ndx) ->
     
   setCookie = (req, res) ->
     if req.user
-      cookieText = generateToken req.user._id, req.ip
+      cookieText = ndx.generateToken req.user._id, req.ip
       res.cookie 'token', cookieText, maxAge: 7 * 24 * 60 * 60 * 1000  
-  generateHash = (password) ->
+  ndx.generateHash = (password) ->
     bcrypt.hashSync password, bcrypt.genSaltSync(8), null
-  validPassword = (password, localPassword) ->
+  ndx.validPassword = (password, localPassword) ->
     bcrypt.compareSync password, localPassword
   ndx.postAuthenticate = (req, res, next) ->
     console.log 'post authenticate'
@@ -43,9 +43,11 @@ module.exports = (ndx) ->
   .use ndx.passport.session()
   .use (req, res, next) ->
     if not ndx.database.maintenance()
+      isCookie = false
       token = ''
       if req.cookies and req.cookies.token
         token = req.cookies.token
+        isCookie = true
       else if req.headers and req.headers.authorization
         parts = req.headers.authorization.split ' '
         if parts.length is 2
@@ -67,7 +69,8 @@ module.exports = (ndx) ->
             users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]
             if users and users.length
               req.user = ndx.extend req.user, users[0]
-              setCookie req, res
+              if isCookie
+                setCookie req, res
     next()
 
   ndx.app.post '/api/refresh-login', (req, res) ->
@@ -82,11 +85,11 @@ module.exports = (ndx) ->
   ndx.app.post '/api/update-password', (req, res) ->
     if req.user
       if req.user.local
-        if validPassword req.body.oldPassword, req.user.local.password
+        if ndx.validPassword req.body.oldPassword, req.user.local.password
           ndx.database.exec 'UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
             {
               email: req.user.email
-              password: generateHash req.body.newPassword
+              password: ndx.generateHash req.body.newPassword
             }
             req.user._id
           ]
@@ -112,8 +115,8 @@ module.exports = (ndx) ->
           if cparts.length is 2
             users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]
             if users and users.length
-              if validPassword cparts[1], users[0].local.password
-                token = generateToken users[0]._id, req.ip
+              if ndx.validPassword cparts[1], users[0].local.password
+                token = ndx.generateToken users[0]._id, req.ip
     if token
       res.json
         accessToken: token
@@ -136,7 +139,7 @@ module.exports = (ndx) ->
         email: email
         local:
           email: email
-          password: generateHash password
+          password: ndx.generateHash password
       ndx.database.exec 'INSERT INTO ' + ndx.settings.USER_TABLE + ' VALUES ?', [newUser]
       done null, newUser
   ndx.passport.use 'local-login', new LocalStrategy
@@ -147,7 +150,7 @@ module.exports = (ndx) ->
     console.log 'local-login'
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
-      if not validPassword password, users[0].local.password
+      if not ndx.validPassword password, users[0].local.password
         return done(null, false, req.flash('message', 'Wrong password'))
       return done(null, users[0])
     else

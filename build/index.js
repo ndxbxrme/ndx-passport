@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, bcrypt, cookieParser, crypto, flash, generateHash, generateToken, session, setCookie, validPassword;
+    var LocalStrategy, ObjectID, bcrypt, cookieParser, crypto, flash, session, setCookie;
     ndx.passport = require('passport');
     flash = require('connect-flash');
     LocalStrategy = require('passport-local').Strategy;
@@ -10,7 +10,7 @@
     crypto = require('crypto-js');
     session = require('express-session');
     cookieParser = require('cookie-parser');
-    generateToken = function(userId, ip) {
+    ndx.generateToken = function(userId, ip) {
       var text;
       text = userId + '||' + new Date().toString();
       text = crypto.Rabbit.encrypt(text, ip).toString();
@@ -20,16 +20,16 @@
     setCookie = function(req, res) {
       var cookieText;
       if (req.user) {
-        cookieText = generateToken(req.user._id, req.ip);
+        cookieText = ndx.generateToken(req.user._id, req.ip);
         return res.cookie('token', cookieText, {
           maxAge: 7 * 24 * 60 * 60 * 1000
         });
       }
     };
-    generateHash = function(password) {
+    ndx.generateHash = function(password) {
       return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
     };
-    validPassword = function(password, localPassword) {
+    ndx.validPassword = function(password, localPassword) {
       return bcrypt.compareSync(password, localPassword);
     };
     ndx.postAuthenticate = function(req, res, next) {
@@ -48,11 +48,13 @@
       saveUninitialized: true,
       resave: true
     })).use(flash()).use(ndx.passport.initialize()).use(ndx.passport.session()).use(function(req, res, next) {
-      var bits, credentials, d, decrypted, parts, scheme, token, users;
+      var bits, credentials, d, decrypted, isCookie, parts, scheme, token, users;
       if (!ndx.database.maintenance()) {
+        isCookie = false;
         token = '';
         if (req.cookies && req.cookies.token) {
           token = req.cookies.token;
+          isCookie = true;
         } else if (req.headers && req.headers.authorization) {
           parts = req.headers.authorization.split(' ');
           if (parts.length === 2) {
@@ -78,7 +80,9 @@
               users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]);
               if (users && users.length) {
                 req.user = ndx.extend(req.user, users[0]);
-                setCookie(req, res);
+                if (isCookie) {
+                  setCookie(req, res);
+                }
               }
             }
           }
@@ -100,11 +104,11 @@
     ndx.app.post('/api/update-password', function(req, res) {
       if (req.user) {
         if (req.user.local) {
-          if (validPassword(req.body.oldPassword, req.user.local.password)) {
+          if (ndx.validPassword(req.body.oldPassword, req.user.local.password)) {
             ndx.database.exec('UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
               {
                 email: req.user.email,
-                password: generateHash(req.body.newPassword)
+                password: ndx.generateHash(req.body.newPassword)
               }, req.user._id
             ]);
             return res.end('OK');
@@ -137,8 +141,8 @@
             if (cparts.length === 2) {
               users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]);
               if (users && users.length) {
-                if (validPassword(cparts[1], users[0].local.password)) {
-                  token = generateToken(users[0]._id, req.ip);
+                if (ndx.validPassword(cparts[1], users[0].local.password)) {
+                  token = ndx.generateToken(users[0]._id, req.ip);
                 }
               }
             }
@@ -170,7 +174,7 @@
           email: email,
           local: {
             email: email,
-            password: generateHash(password)
+            password: ndx.generateHash(password)
           }
         };
         ndx.database.exec('INSERT INTO ' + ndx.settings.USER_TABLE + ' VALUES ?', [newUser]);
@@ -186,7 +190,7 @@
       console.log('local-login');
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
-        if (!validPassword(password, users[0].local.password)) {
+        if (!ndx.validPassword(password, users[0].local.password)) {
           return done(null, false, req.flash('message', 'Wrong password'));
         }
         return done(null, users[0]);
