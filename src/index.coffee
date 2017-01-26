@@ -25,6 +25,7 @@ module.exports = (ndx) ->
   ndx.validPassword = (password, localPassword) ->
     bcrypt.compareSync password, localPassword
   ndx.postAuthenticate = (req, res, next) ->
+    console.log '1'
     setCookie req, res
     res.redirect '/'
   ndx.passport.serializeUser (user, done) ->
@@ -59,6 +60,7 @@ module.exports = (ndx) ->
         decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
         if decrypted
           decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8)
+      console.log 'decrypted', decrypted
       if decrypted.indexOf('||') isnt -1
         bits = decrypted.split '||'
         if bits.length is 2
@@ -70,7 +72,7 @@ module.exports = (ndx) ->
               if not req.user
                 req.user = {}
               if Object.prototype.toString.call(req.user) is '[object Object]'
-                req.user = ndx.extend req.user, users[0]
+                ndx.extend req.user, users[0]
               else
                 req.user = users[0]
               if isCookie

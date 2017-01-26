@@ -33,6 +33,7 @@
       return bcrypt.compareSync(password, localPassword);
     };
     ndx.postAuthenticate = function(req, res, next) {
+      console.log('1');
       setCookie(req, res);
       return res.redirect('/');
     };
@@ -71,6 +72,7 @@
             decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8);
           }
         } catch (undefined) {}
+        console.log('decrypted', decrypted);
         if (decrypted.indexOf('||') !== -1) {
           bits = decrypted.split('||');
           if (bits.length === 2) {
@@ -82,7 +84,7 @@
                   req.user = {};
                 }
                 if (Object.prototype.toString.call(req.user) === '[object Object]') {
-                  req.user = ndx.extend(req.user, users[0]);
+                  ndx.extend(req.user, users[0]);
                 } else {
                   req.user = users[0];
                 }
