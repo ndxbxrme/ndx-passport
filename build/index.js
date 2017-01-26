@@ -33,7 +33,6 @@
       return bcrypt.compareSync(password, localPassword);
     };
     ndx.postAuthenticate = function(req, res, next) {
-      console.log('1');
       setCookie(req, res);
       return res.redirect('/');
     };
@@ -72,7 +71,6 @@
             decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8);
           }
         } catch (undefined) {}
-        console.log('decrypted', decrypted);
         if (decrypted.indexOf('||') !== -1) {
           bits = decrypted.split('||');
           if (bits.length === 2) {
@@ -136,16 +134,20 @@
         });
       }
     });
-    ndx.app.post('/api/auth/token', function(req, res) {
-      var cparts, credentials, parts, scheme, token, users;
+    ndx.app.post('/auth/token', function(req, res) {
+      var cparts, credentials, decrypted, parts, scheme, token, users;
       token = '';
       if (req.headers && req.headers.authorization) {
+        console.log('1');
         parts = req.headers.authorization.split(' ');
         if (parts.length === 2) {
+          console.log('2');
           scheme = parts[0];
           credentials = parts[1];
+          console.log('3', scheme, credentials);
           if (/^Basic$/i.test(scheme)) {
-            cparts = credentials.split(':');
+            decrypted = new Buffer(credentials, 'base64').toString('utf8');
+            cparts = decrypted.split(':');
             if (cparts.length === 2) {
               users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]);
               if (users && users.length) {
@@ -162,6 +164,7 @@
           accessToken: token
         });
       } else {
+        console.log('where\'z ma token');
         return res.json({
           error: 'Not authorized'
         });

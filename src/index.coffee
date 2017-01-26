@@ -25,7 +25,6 @@ module.exports = (ndx) ->
   ndx.validPassword = (password, localPassword) ->
     bcrypt.compareSync password, localPassword
   ndx.postAuthenticate = (req, res, next) ->
-    console.log '1'
     setCookie req, res
     res.redirect '/'
   ndx.passport.serializeUser (user, done) ->
@@ -60,7 +59,6 @@ module.exports = (ndx) ->
         decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
         if decrypted
           decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8)
-      console.log 'decrypted', decrypted
       if decrypted.indexOf('||') isnt -1
         bits = decrypted.split '||'
         if bits.length is 2
@@ -109,15 +107,20 @@ module.exports = (ndx) ->
     else
       res.json
         error: 'Not logged in'
-  ndx.app.post '/api/auth/token', (req, res) ->
+  ndx.app.post '/auth/token', (req, res) ->
     token = ''
     if req.headers and req.headers.authorization
+      console.log '1'
       parts = req.headers.authorization.split ' '
       if parts.length is 2
+        console.log '2'
         scheme = parts[0]
         credentials = parts[1]
+        console.log '3', scheme, credentials
         if /^Basic$/i.test scheme
-          cparts = credentials.split ':'
+          decrypted = new Buffer credentials, 'base64'
+          .toString 'utf8'
+          cparts = decrypted.split ':'
           if cparts.length is 2
             users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]
             if users and users.length
@@ -127,6 +130,7 @@ module.exports = (ndx) ->
       res.json
         accessToken: token
     else
+      console.log 'where\'z ma token'
       res.json
         error: 'Not authorized'
     
