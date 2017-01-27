@@ -1,15 +1,13 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, bcrypt, cookieParser, crypto, flash, session, setCookie;
+    var LocalStrategy, ObjectID, bcrypt, crypto, flash, setCookie;
     ndx.passport = require('passport');
     flash = require('connect-flash');
     LocalStrategy = require('passport-local').Strategy;
     ObjectID = require('bson-objectid');
     bcrypt = require('bcrypt-nodejs');
     crypto = require('crypto-js');
-    session = require('express-session');
-    cookieParser = require('cookie-parser');
     ndx.generateToken = function(userId, ip) {
       var text;
       text = userId + '||' + new Date().toString();
@@ -42,11 +40,7 @@
     ndx.passport.deserializeUser(function(id, done) {
       return done(null, id);
     });
-    ndx.app.use(cookieParser(ndx.settings.SESSION_SECRET)).use(session({
-      secret: ndx.settings.SESSION_SECRET,
-      saveUninitialized: true,
-      resave: true
-    })).use(flash()).use(ndx.passport.initialize()).use('/api/*', function(req, res, next) {
+    ndx.app.use(flash()).use(ndx.passport.initialize()).use('/api/*', function(req, res, next) {
       var bits, credentials, d, decrypted, isCookie, parts, scheme, token, users;
       if (!ndx.database.maintenance()) {
         isCookie = false;
