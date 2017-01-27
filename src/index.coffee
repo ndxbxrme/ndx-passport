@@ -7,8 +7,6 @@ module.exports = (ndx) ->
   ObjectID = require 'bson-objectid'
   bcrypt = require 'bcrypt-nodejs'
   crypto = require 'crypto-js'
-  session = require 'express-session'
-  cookieParser = require 'cookie-parser'
 
   ndx.generateToken = (userId, ip) ->
     text = userId + '||' + new Date().toString()
@@ -32,11 +30,7 @@ module.exports = (ndx) ->
   ndx.passport.deserializeUser (id, done) ->
     done null, id
   
-  ndx.app.use cookieParser ndx.settings.SESSION_SECRET
-  .use session
-    secret: ndx.settings.SESSION_SECRET
-    saveUninitialized: true
-    resave: true
+  ndx.app
   .use flash()
   .use ndx.passport.initialize()
   .use '/api/*', (req, res, next) ->
