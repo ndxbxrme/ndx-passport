@@ -132,13 +132,10 @@
       var cparts, credentials, decrypted, parts, scheme, token, users;
       token = '';
       if (req.headers && req.headers.authorization) {
-        console.log('1');
         parts = req.headers.authorization.split(' ');
         if (parts.length === 2) {
-          console.log('2');
           scheme = parts[0];
           credentials = parts[1];
-          console.log('3', scheme, credentials);
           if (/^Basic$/i.test(scheme)) {
             decrypted = new Buffer(credentials, 'base64').toString('utf8');
             cparts = decrypted.split(':');
@@ -158,7 +155,6 @@
           accessToken: token
         });
       } else {
-        console.log('where\'z ma token');
         return res.json({
           error: 'Not authorized'
         });
