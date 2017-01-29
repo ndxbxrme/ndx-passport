@@ -4,7 +4,6 @@ module.exports = (ndx) ->
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   ObjectID = require 'bson-objectid'
-  crypto = require 'crypto-js'
 
 
   ndx.passport.serializeUser (user, done) ->

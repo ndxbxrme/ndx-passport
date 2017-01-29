@@ -1,11 +1,10 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, crypto;
+    var LocalStrategy, ObjectID;
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     ObjectID = require('bson-objectid');
-    crypto = require('crypto-js');
     ndx.passport.serializeUser(function(user, done) {
       return done(null, user._id);
     });
