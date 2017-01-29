@@ -29,7 +29,7 @@
           if (ndx.validPassword(req.body.oldPassword, req.user.local.password)) {
             ndx.database.exec('UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
               {
-                email: req.user.email,
+                email: req.user.local.email,
                 password: ndx.generateHash(req.body.newPassword)
               }, req.user._id
             ]);
