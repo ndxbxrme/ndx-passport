@@ -2,73 +2,18 @@
 
 module.exports = (ndx) ->
   ndx.passport = require 'passport'
-  flash = require 'connect-flash'
   LocalStrategy = require('passport-local').Strategy
   ObjectID = require 'bson-objectid'
-  bcrypt = require 'bcrypt-nodejs'
   crypto = require 'crypto-js'
 
-  ndx.generateToken = (userId, ip) ->
-    text = userId + '||' + new Date().toString()
-    text = crypto.Rabbit.encrypt(text, ip).toString()
-    text = crypto.Rabbit.encrypt(text, ndx.settings.SESSION_SECRET).toString()
-    text
-    
-  setCookie = (req, res) ->
-    if req.user
-      cookieText = ndx.generateToken req.user._id, req.ip
-      res.cookie 'token', cookieText, maxAge: 7 * 24 * 60 * 60 * 1000  
-  ndx.generateHash = (password) ->
-    bcrypt.hashSync password, bcrypt.genSaltSync(8), null
-  ndx.validPassword = (password, localPassword) ->
-    bcrypt.compareSync password, localPassword
-  ndx.postAuthenticate = (req, res, next) ->
-    setCookie req, res
-    res.redirect '/'
+
   ndx.passport.serializeUser (user, done) ->
     done null, user._id
   ndx.passport.deserializeUser (id, done) ->
     done null, id
   
   ndx.app
-  .use flash()
   .use ndx.passport.initialize()
-  .use '/api/*', (req, res, next) ->
-    if not ndx.database.maintenance()
-      isCookie = false
-      token = ''
-      if req.cookies and req.cookies.token
-        token = req.cookies.token
-        isCookie = true
-      else if req.headers and req.headers.authorization
-        parts = req.headers.authorization.split ' '
-        if parts.length is 2
-          scheme = parts[0]
-          credentials = parts[1]
-          if /^Bearer$/i.test scheme
-            token = credentials
-      decrypted = ''
-      try
-        decrypted = crypto.Rabbit.decrypt(token, ndx.settings.SESSION_SECRET).toString(crypto.enc.Utf8)
-        if decrypted
-          decrypted = crypto.Rabbit.decrypt(decrypted, req.ip).toString(crypto.enc.Utf8)
-      if decrypted.indexOf('||') isnt -1
-        bits = decrypted.split '||'
-        if bits.length is 2
-          d = new Date bits[1]
-          if d.toString() isnt 'Invalid Date'
-            #todo - add timeout for date
-            users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE _id=?', [bits[0]]
-            if users and users.length
-              if not req.user
-                req.user = {}
-              if Object.prototype.toString.call(req.user) is '[object Object]'
-                ndx.extend req.user, users[0]
-              else
-                req.user = users[0]
-              if isCookie
-                setCookie req, res
-    next()
 
   ndx.app.post '/api/refresh-login', (req, res) ->
     if req.user
@@ -100,28 +45,6 @@ module.exports = (ndx) ->
     else
       res.json
         error: 'Not logged in'
-  ndx.app.post '/auth/token', (req, res) ->
-    token = ''
-    if req.headers and req.headers.authorization
-      parts = req.headers.authorization.split ' '
-      if parts.length is 2
-        scheme = parts[0]
-        credentials = parts[1]
-        if /^Basic$/i.test scheme
-          decrypted = new Buffer credentials, 'base64'
-          .toString 'utf8'
-          cparts = decrypted.split ':'
-          if cparts.length is 2
-            users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [cparts[0]]
-            if users and users.length
-              if ndx.validPassword cparts[1], users[0].local.password
-                token = ndx.generateToken users[0]._id, req.ip
-    if token
-      res.json
-        accessToken: token
-    else
-      res.json
-        error: 'Not authorized'
     
     
   ndx.passport.use 'local-signup', new LocalStrategy
