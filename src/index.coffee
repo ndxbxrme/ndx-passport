@@ -18,7 +18,7 @@ module.exports = (ndx) ->
     if req.user
       res.end JSON.stringify req.user
     else
-      res.end 'error'    
+      throw ndx.UNAUTHORIZED   
   ndx.app.get '/api/logout', (req, res) ->
     res.clearCookie 'token'
     res.redirect '/'
@@ -36,14 +36,17 @@ module.exports = (ndx) ->
           ]
           res.end 'OK'
         else
-          res.json
-            error: 'Invalid password'
+          throw
+            status: 401
+            message: 'Invalid password'
       else
-        res.json
-          error: 'No local details'
+        throw
+          status: 401
+          message: 'No local details'
     else
-      res.json
-        error: 'Not logged in'
+      throw
+        status: 401
+        message: 'Not logged in'
     
     
   ndx.passport.use 'local-signup', new LocalStrategy
@@ -92,7 +95,7 @@ module.exports = (ndx) ->
       return
     return
   ndx.app.get '/api/badlogin', (req, res) ->
-    res.json
-      error: true
-      message: req.flash 'message'
+    throw
+      status: 401
+      message: req.flash('message')[0]
   

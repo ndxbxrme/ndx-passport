@@ -16,7 +16,7 @@
       if (req.user) {
         return res.end(JSON.stringify(req.user));
       } else {
-        return res.end('error');
+        throw ndx.UNAUTHORIZED;
       }
     });
     ndx.app.get('/api/logout', function(req, res) {
@@ -35,19 +35,22 @@
             ]);
             return res.end('OK');
           } else {
-            return res.json({
-              error: 'Invalid password'
-            });
+            throw {
+              status: 401,
+              message: 'Invalid password'
+            };
           }
         } else {
-          return res.json({
-            error: 'No local details'
-          });
+          throw {
+            status: 401,
+            message: 'No local details'
+          };
         }
       } else {
-        return res.json({
-          error: 'Not logged in'
-        });
+        throw {
+          status: 401,
+          message: 'Not logged in'
+        };
       }
     });
     ndx.passport.use('local-signup', new LocalStrategy({
@@ -108,10 +111,10 @@
       });
     });
     return ndx.app.get('/api/badlogin', function(req, res) {
-      return res.json({
-        error: true,
-        message: req.flash('message')
-      });
+      throw {
+        status: 401,
+        message: req.flash('message')[0]
+      };
     });
   };
 
