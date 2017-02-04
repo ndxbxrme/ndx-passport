@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID;
+    var LocalStrategy, ObjectID, selectFields;
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     ObjectID = require('bson-objectid');
@@ -12,9 +12,34 @@
       return done(null, id);
     });
     ndx.app.use(ndx.passport.initialize());
+    selectFields = function(input, output, fields) {
+      var field, inField, results;
+      results = [];
+      for (field in fields) {
+        inField = input[field];
+        if (inField) {
+          if (Object.prototype.toString.call(inField) === '[object Object]') {
+            output[field] = {};
+            results.push(selectFields(inField, output[field], fields[field]));
+          } else {
+            results.push(output[field] = inField);
+          }
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
     ndx.app.post('/api/refresh-login', function(req, res) {
+      var output;
       if (req.user) {
-        return res.end(JSON.stringify(req.user));
+        output = {};
+        if (ndx.settings.publicUser) {
+          selectFields(req.user, output, ndx.settings.publicUser);
+        } else {
+          output = req.user;
+        }
+        return res.end(JSON.stringify(output));
       } else {
         throw ndx.UNAUTHORIZED;
       }

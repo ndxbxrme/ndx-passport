@@ -13,10 +13,25 @@ module.exports = (ndx) ->
   
   ndx.app
   .use ndx.passport.initialize()
+  
+  selectFields = (input, output, fields) ->
+    for field of fields
+      inField = input[field]
+      if inField
+        if Object.prototype.toString.call(inField) is '[object Object]'
+          output[field] = {}
+          selectFields inField, output[field], fields[field]
+        else
+          output[field] = inField
 
   ndx.app.post '/api/refresh-login', (req, res) ->
     if req.user
-      res.end JSON.stringify req.user
+      output = {}
+      if ndx.settings.publicUser
+        selectFields req.user, output, ndx.settings.publicUser
+      else
+        output = req.user
+      res.end JSON.stringify output
     else
       throw ndx.UNAUTHORIZED   
   ndx.app.get '/api/logout', (req, res) ->
