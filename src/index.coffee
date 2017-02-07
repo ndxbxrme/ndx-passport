@@ -10,7 +10,7 @@ module.exports = (ndx) ->
     done null, user._id
   ndx.passport.deserializeUser (id, done) ->
     done null, id
-  ndx.passport.splitScopes (scope) ->
+  ndx.passport.splitScopes = (scope) ->
     scopes = scope.replace(/^[ ,]+/, '').replace(/[ ,]+$/, '').split(/[ ,]+/g)
     if scopes.length < 2
       return scopes[0]

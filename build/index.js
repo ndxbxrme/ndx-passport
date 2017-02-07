@@ -11,7 +11,7 @@
     ndx.passport.deserializeUser(function(id, done) {
       return done(null, id);
     });
-    ndx.passport.splitScopes(function(scope) {
+    ndx.passport.splitScopes = function(scope) {
       var scopes;
       scopes = scope.replace(/^[ ,]+/, '').replace(/[ ,]+$/, '').split(/[ ,]+/g);
       if (scopes.length < 2) {
@@ -19,7 +19,7 @@
       } else {
         return scopes;
       }
-    });
+    };
     ndx.app.use(ndx.passport.initialize());
     selectFields = function(input, output, fields) {
       var field, inField, results;
