@@ -95,7 +95,8 @@
       var newUser, users;
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
-        return done(null, false, req.flash('message', 'That email is already taken.'));
+        ndx.passport.loginMessage = 'That email is already taken.';
+        return done(null, false);
       } else {
         newUser = {
           _id: ObjectID.generate(),
@@ -118,11 +119,13 @@
       users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]);
       if (users && users.length) {
         if (!ndx.validPassword(password, users[0].local.password)) {
-          return done(null, false, req.flash('message', 'Wrong password'));
+          ndx.passport.loginMessage = 'Wrong password';
+          return done(null, false);
         }
         return done(null, users[0]);
       } else {
-        return done(null, false, req.flash('message', 'No user found'));
+        ndx.passport.loginMessage = 'No user found';
+        return done(null, false);
       }
     }));
     ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup', {
@@ -147,7 +150,7 @@
     return ndx.app.get('/api/badlogin', function(req, res) {
       throw {
         status: 401,
-        message: req.flash('message')[0]
+        message: ndx.passport.loginMessage
       };
     });
   };

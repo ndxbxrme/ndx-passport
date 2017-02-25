@@ -77,7 +77,8 @@ module.exports = (ndx) ->
   , (req, email, password, done) ->
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
-      return done(null, false, req.flash('message', 'That email is already taken.'))
+      ndx.passport.loginMessage = 'That email is already taken.'
+      return done(null, false)
     else
       newUser = 
         _id: ObjectID.generate()
@@ -95,10 +96,12 @@ module.exports = (ndx) ->
     users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
     if users and users.length
       if not ndx.validPassword password, users[0].local.password
-        return done(null, false, req.flash('message', 'Wrong password'))
+        ndx.passport.loginMessage = 'Wrong password'
+        return done(null, false)
       return done(null, users[0])
     else
-      return done(null, false, req.flash('message', 'No user found'))
+      ndx.passport.loginMessage = 'No user found'
+      return done(null, false)
   ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
   ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/api/badlogin')
@@ -118,5 +121,5 @@ module.exports = (ndx) ->
   ndx.app.get '/api/badlogin', (req, res) ->
     throw
       status: 401
-      message: req.flash('message')[0]
+      message: ndx.passport.loginMessage
   
