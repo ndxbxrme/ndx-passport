@@ -33,8 +33,8 @@ module.exports = (ndx) ->
   ndx.app.post '/api/refresh-login', (req, res) ->
     if req.user
       output = {}
-      if ndx.settings.publicUser
-        selectFields req.user, output, ndx.settings.publicUser
+      if ndx.settings.PUBLIC_USER
+        selectFields req.user, output, ndx.settings.PUBLIC_USER
       else
         output = req.user
       res.end JSON.stringify output
@@ -48,13 +48,10 @@ module.exports = (ndx) ->
     if req.user
       if req.user.local
         if ndx.validPassword req.body.oldPassword, req.user.local.password
-          ndx.database.exec 'UPDATE ' + ndx.settings.USER_TABLE + ' SET local=? WHERE _id=?', [
-            {
-              email: req.user.local.email
-              password: ndx.generateHash req.body.newPassword
-            }
-            req.user._id
-          ]
+          ndx.database.update ndx.settings.USER_TABLE,
+            email: req.user.local.email
+            password: ndx.generateHash req.body.newPassword
+          , _id:req.user._id
           res.end 'OK'
         else
           throw
@@ -75,7 +72,9 @@ module.exports = (ndx) ->
     passwordField: 'password'
     passReqToCallback: true
   , (req, email, password, done) ->
-    users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
+    users = ndx.database.select ndx.settings.USER_TABLE,
+      local:
+        email: email
     if users and users.length
       ndx.passport.loginMessage = 'That email is already taken.'
       return done(null, false)
@@ -86,14 +85,16 @@ module.exports = (ndx) ->
         local:
           email: email
           password: ndx.generateHash password
-      ndx.database.exec 'INSERT INTO ' + ndx.settings.USER_TABLE + ' VALUES ?', [newUser]
+      ndx.database.insert ndx.settings.USER_TABLE, newUser
       done null, newUser
   ndx.passport.use 'local-login', new LocalStrategy
     usernameField: 'email'
     passwordField: 'password'
     passReqToCallback: true
   , (req, email, password, done) ->
-    users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE local->email=?', [email]
+    users = ndx.database.select ndx.settings.USER_TABLE,
+      local:
+        email: email
     if users and users.length
       if not ndx.validPassword password, users[0].local.password
         ndx.passport.loginMessage = 'Wrong password'
