@@ -1,10 +1,12 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, selectFields;
+    var LocalStrategy, ObjectID, passwordField, selectFields, usernameField;
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     ObjectID = require('bson-objectid');
+    usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
+    passwordField = process.env.PASSWORD_FIELD || ndx.settings.PASSWORD_FIELD || 'password';
     ndx.passport.serializeUser(function(user, done) {
       return done(null, user._id);
     });
@@ -88,8 +90,8 @@
       }
     });
     ndx.passport.use('local-signup', new LocalStrategy({
-      usernameField: 'email',
-      passwordField: 'password',
+      usernameField: usernameField,
+      passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
       var newUser, users;
@@ -115,8 +117,8 @@
       }
     }));
     ndx.passport.use('local-login', new LocalStrategy({
-      usernameField: 'email',
-      passwordField: 'password',
+      usernameField: usernameField,
+      passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
       var users;

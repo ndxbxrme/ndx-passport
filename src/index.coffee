@@ -4,6 +4,8 @@ module.exports = (ndx) ->
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   ObjectID = require 'bson-objectid'
+  usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
+  passwordField = process.env.PASSWORD_FIELD or ndx.settings.PASSWORD_FIELD or 'password'
 
 
   ndx.passport.serializeUser (user, done) ->
@@ -68,8 +70,8 @@ module.exports = (ndx) ->
     
     
   ndx.passport.use 'local-signup', new LocalStrategy
-    usernameField: 'email'
-    passwordField: 'password'
+    usernameField: usernameField
+    passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
     users = ndx.database.select ndx.settings.USER_TABLE,
@@ -88,8 +90,8 @@ module.exports = (ndx) ->
       ndx.database.insert ndx.settings.USER_TABLE, newUser
       done null, newUser
   ndx.passport.use 'local-login', new LocalStrategy
-    usernameField: 'email'
-    passwordField: 'password'
+    usernameField: usernameField
+    passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
     users = ndx.database.select ndx.settings.USER_TABLE,
