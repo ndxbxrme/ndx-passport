@@ -9,7 +9,7 @@ module.exports = (ndx) ->
 
 
   ndx.passport.serializeUser (user, done) ->
-    done null, user._id
+    done null, user[ndx.settings.AUTO_ID]
   ndx.passport.deserializeUser (id, done) ->
     done null, id
   ndx.passport.splitScopes = (scope) ->
@@ -50,10 +50,13 @@ module.exports = (ndx) ->
     if req.user
       if req.user.local
         if ndx.validPassword req.body.oldPassword, req.user.local.password
+          where = {}
+          where[ndx.settings.AUTO_ID] = req.user[ndx.settings.AUTO_ID]
           ndx.database.update ndx.settings.USER_TABLE,
-            email: req.user.local.email
-            password: ndx.generateHash req.body.newPassword
-          , _id:req.user._id
+            local:
+              email: req.user.local.email
+              password: ndx.generateHash req.body.newPassword
+          , where
           res.end 'OK'
         else
           throw
@@ -84,11 +87,11 @@ module.exports = (ndx) ->
         return done(null, false)
       else
         newUser = 
-          _id: ObjectID.generate()
           email: email
           local:
             email: email
             password: ndx.generateHash password
+        newUser[ndx.settings.AUTO_ID] = ObjectID.generate()
         ndx.database.insert ndx.settings.USER_TABLE, newUser
         done null, newUser
   ndx.passport.use 'local-login', new LocalStrategy
