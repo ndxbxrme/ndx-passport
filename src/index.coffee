@@ -74,37 +74,41 @@ module.exports = (ndx) ->
     passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
-    users = ndx.database.select ndx.settings.USER_TABLE,
-      local:
-        email: email
-    if users and users.length
-      ndx.passport.loginMessage = 'That email is already taken.'
-      return done(null, false)
-    else
-      newUser = 
-        _id: ObjectID.generate()
-        email: email
+    ndx.database.select ndx.settings.USER_TABLE,
+      where:
         local:
           email: email
-          password: ndx.generateHash password
-      ndx.database.insert ndx.settings.USER_TABLE, newUser
-      done null, newUser
+    , (users) ->
+      if users and users.length
+        ndx.passport.loginMessage = 'That email is already taken.'
+        return done(null, false)
+      else
+        newUser = 
+          _id: ObjectID.generate()
+          email: email
+          local:
+            email: email
+            password: ndx.generateHash password
+        ndx.database.insert ndx.settings.USER_TABLE, newUser
+        done null, newUser
   ndx.passport.use 'local-login', new LocalStrategy
     usernameField: usernameField
     passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
-    users = ndx.database.select ndx.settings.USER_TABLE,
-      local:
-        email: email
-    if users and users.length
-      if not ndx.validPassword password, users[0].local.password
-        ndx.passport.loginMessage = 'Wrong password'
+    ndx.database.select ndx.settings.USER_TABLE,
+      where:
+        local:
+          email: email
+    , (users) ->
+      if users and users.length
+        if not ndx.validPassword password, users[0].local.password
+          ndx.passport.loginMessage = 'Wrong password'
+          return done(null, false)
+        return done(null, users[0])
+      else
+        ndx.passport.loginMessage = 'No user found'
         return done(null, false)
-      return done(null, users[0])
-    else
-      ndx.passport.loginMessage = 'No user found'
-      return done(null, false)
   ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
   ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/api/badlogin')

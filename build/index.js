@@ -94,49 +94,54 @@
       passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
-      var newUser, users;
-      users = ndx.database.select(ndx.settings.USER_TABLE, {
-        local: {
-          email: email
+      return ndx.database.select(ndx.settings.USER_TABLE, {
+        where: {
+          local: {
+            email: email
+          }
+        }
+      }, function(users) {
+        var newUser;
+        if (users && users.length) {
+          ndx.passport.loginMessage = 'That email is already taken.';
+          return done(null, false);
+        } else {
+          newUser = {
+            _id: ObjectID.generate(),
+            email: email,
+            local: {
+              email: email,
+              password: ndx.generateHash(password)
+            }
+          };
+          ndx.database.insert(ndx.settings.USER_TABLE, newUser);
+          return done(null, newUser);
         }
       });
-      if (users && users.length) {
-        ndx.passport.loginMessage = 'That email is already taken.';
-        return done(null, false);
-      } else {
-        newUser = {
-          _id: ObjectID.generate(),
-          email: email,
-          local: {
-            email: email,
-            password: ndx.generateHash(password)
-          }
-        };
-        ndx.database.insert(ndx.settings.USER_TABLE, newUser);
-        return done(null, newUser);
-      }
     }));
     ndx.passport.use('local-login', new LocalStrategy({
       usernameField: usernameField,
       passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
-      var users;
-      users = ndx.database.select(ndx.settings.USER_TABLE, {
-        local: {
-          email: email
+      return ndx.database.select(ndx.settings.USER_TABLE, {
+        where: {
+          local: {
+            email: email
+          }
         }
-      });
-      if (users && users.length) {
-        if (!ndx.validPassword(password, users[0].local.password)) {
-          ndx.passport.loginMessage = 'Wrong password';
+      }, function(users) {
+        if (users && users.length) {
+          if (!ndx.validPassword(password, users[0].local.password)) {
+            ndx.passport.loginMessage = 'Wrong password';
+            return done(null, false);
+          }
+          return done(null, users[0]);
+        } else {
+          ndx.passport.loginMessage = 'No user found';
           return done(null, false);
         }
-        return done(null, users[0]);
-      } else {
-        ndx.passport.loginMessage = 'No user found';
-        return done(null, false);
-      }
+      });
     }));
     ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup', {
       failureRedirect: '/api/badlogin'
