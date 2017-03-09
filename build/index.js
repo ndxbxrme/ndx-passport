@@ -118,6 +118,7 @@
           };
           newUser[ndx.settings.AUTO_ID] = ObjectID.generate();
           ndx.database.insert(ndx.settings.USER_TABLE, newUser);
+          ndx.user = newUser;
           return done(null, newUser);
         }
       });
@@ -139,6 +140,7 @@
             ndx.passport.loginMessage = 'Wrong password';
             return done(null, false);
           }
+          ndx.user = users[0];
           return done(null, users[0]);
         } else {
           ndx.passport.loginMessage = 'No user found';
