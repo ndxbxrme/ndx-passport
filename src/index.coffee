@@ -44,6 +44,7 @@ module.exports = (ndx) ->
       throw ndx.UNAUTHORIZED   
   ndx.app.get '/api/logout', (req, res) ->
     res.clearCookie 'token'
+    ndx.user = null
     res.redirect '/'
     return
   ndx.app.post '/api/update-password', (req, res) ->
@@ -56,7 +57,7 @@ module.exports = (ndx) ->
             local:
               email: ndx.user.local.email
               password: ndx.generateHash req.body.newPassword
-          , where
+          , where, null, true
           res.end 'OK'
         else
           throw
@@ -92,9 +93,10 @@ module.exports = (ndx) ->
             email: email
             password: ndx.generateHash password
         newUser[ndx.settings.AUTO_ID] = ObjectID.generate()
-        ndx.database.insert ndx.settings.USER_TABLE, newUser
+        ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
         ndx.user = newUser
         done null, newUser
+    , true 
   ndx.passport.use 'local-login', new LocalStrategy
     usernameField: usernameField
     passwordField: passwordField
@@ -114,6 +116,7 @@ module.exports = (ndx) ->
       else
         ndx.passport.loginMessage = 'No user found'
         return done(null, false)
+    , true
   ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
   , ndx.postAuthenticate
   ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/api/badlogin')

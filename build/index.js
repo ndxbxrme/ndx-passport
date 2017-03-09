@@ -57,6 +57,7 @@
     });
     ndx.app.get('/api/logout', function(req, res) {
       res.clearCookie('token');
+      ndx.user = null;
       res.redirect('/');
     });
     ndx.app.post('/api/update-password', function(req, res) {
@@ -71,7 +72,7 @@
                 email: ndx.user.local.email,
                 password: ndx.generateHash(req.body.newPassword)
               }
-            }, where);
+            }, where, null, true);
             return res.end('OK');
           } else {
             throw {
@@ -117,11 +118,11 @@
             }
           };
           newUser[ndx.settings.AUTO_ID] = ObjectID.generate();
-          ndx.database.insert(ndx.settings.USER_TABLE, newUser);
+          ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
           ndx.user = newUser;
           return done(null, newUser);
         }
-      });
+      }, true);
     }));
     ndx.passport.use('local-login', new LocalStrategy({
       usernameField: usernameField,
@@ -146,7 +147,7 @@
           ndx.passport.loginMessage = 'No user found';
           return done(null, false);
         }
-      });
+      }, true);
     }));
     ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup', {
       failureRedirect: '/api/badlogin'
