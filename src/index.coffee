@@ -33,12 +33,12 @@ module.exports = (ndx) ->
           output[field] = inField
 
   ndx.app.post '/api/refresh-login', (req, res) ->
-    if req.user
+    if ndx.user
       output = {}
       if ndx.settings.PUBLIC_USER
-        selectFields req.user, output, ndx.settings.PUBLIC_USER
+        selectFields ndx.user, output, ndx.settings.PUBLIC_USER
       else
-        output = req.user
+        output = ndx.user
       res.end JSON.stringify output
     else
       throw ndx.UNAUTHORIZED   
@@ -47,14 +47,14 @@ module.exports = (ndx) ->
     res.redirect '/'
     return
   ndx.app.post '/api/update-password', (req, res) ->
-    if req.user
-      if req.user.local
-        if ndx.validPassword req.body.oldPassword, req.user.local.password
+    if ndx.user
+      if ndx.user.local
+        if ndx.validPassword req.body.oldPassword, ndx.user.local.password
           where = {}
-          where[ndx.settings.AUTO_ID] = req.user[ndx.settings.AUTO_ID]
+          where[ndx.settings.AUTO_ID] = ndx.user[ndx.settings.AUTO_ID]
           ndx.database.update ndx.settings.USER_TABLE,
             local:
-              email: req.user.local.email
+              email: ndx.user.local.email
               password: ndx.generateHash req.body.newPassword
           , where
           res.end 'OK'
@@ -121,7 +121,7 @@ module.exports = (ndx) ->
     return
   ndx.app.post '/api/connect/local', ndx.passport.authorize('local-signup', failureRedirect: '/api/badlogin')
   ndx.app.get '/api/unlink/local', (req, res) ->
-    user = req.user
+    user = ndx.user
     user.local.email = undefined
     user.local.password = undefined
     user.save (err) ->
