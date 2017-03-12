@@ -52,7 +52,11 @@
         }
         return res.end(JSON.stringify(output));
       } else {
-        throw ndx.UNAUTHORIZED;
+        if (ndx.settings.SOFT_LOGIN) {
+          return res.end('');
+        } else {
+          throw ndx.UNAUTHORIZED;
+        }
       }
     });
     ndx.app.get('/api/logout', function(req, res) {

@@ -41,7 +41,10 @@ module.exports = (ndx) ->
         output = ndx.user
       res.end JSON.stringify output
     else
-      throw ndx.UNAUTHORIZED   
+      if ndx.settings.SOFT_LOGIN
+        res.end ''
+      else
+        throw ndx.UNAUTHORIZED   
   ndx.app.get '/api/logout', (req, res) ->
     res.clearCookie 'token'
     ndx.user = null
