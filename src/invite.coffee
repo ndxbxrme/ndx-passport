@@ -7,7 +7,7 @@ module.exports = (ndx) ->
         subject: "You have been invited"
         body: 'h1 invite\np\n  a(href="#{code}")= code'
         from: "System"
-      users = ['admin', 'superadmin']
+      users: ['admin', 'superadmin']
     ndx.app.post '/invite/accept', (req, res, next) ->
       try
         user = JSON.parse ndx.parseToken(req.body.code, true)
