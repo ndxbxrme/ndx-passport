@@ -7,6 +7,11 @@ module.exports = (ndx) ->
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
   passwordField = process.env.PASSWORD_FIELD or ndx.settings.PASSWORD_FIELD or 'password'
 
+  if ndx.settings.HAS_FORGOT or process.env.HAS_FORGOT
+    require('./forgot') ndx
+  
+  if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
+    require('./invite') ndx
 
   ndx.passport.serializeUser (user, done) ->
     done null, user[ndx.settings.AUTO_ID]

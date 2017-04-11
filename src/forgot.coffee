@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = (ndx) ->
-  if ndx.settings.HAS_FORGOT
+  if ndx.settings.HAS_FORGOT or process.env.HAS_FORGOT
     ndx.forgot =
       fetchTemplate: -> 
         subject: "forgot password"

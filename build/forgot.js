@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    if (ndx.settings.HAS_FORGOT) {
+    if (ndx.settings.HAS_FORGOT || process.env.HAS_FORGOT) {
       ndx.forgot = {
         fetchTemplate: function() {
           return {

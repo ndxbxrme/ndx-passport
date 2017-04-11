@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    if (ndx.settings.HAS_INVITE) {
+    if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
       ndx.invite = {
         fetchTemplate: function() {
           return {

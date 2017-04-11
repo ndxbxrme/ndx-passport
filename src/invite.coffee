@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = (ndx) ->
-  if ndx.settings.HAS_INVITE
+  if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
     ndx.invite = 
       fetchTemplate: ->
         subject: "You have been invited"

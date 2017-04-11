@@ -7,6 +7,12 @@
     ObjectID = require('bson-objectid');
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
     passwordField = process.env.PASSWORD_FIELD || ndx.settings.PASSWORD_FIELD || 'password';
+    if (ndx.settings.HAS_FORGOT || process.env.HAS_FORGOT) {
+      require('./forgot')(ndx);
+    }
+    if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
+      require('./invite')(ndx);
+    }
     ndx.passport.serializeUser(function(user, done) {
       return done(null, user[ndx.settings.AUTO_ID]);
     });
