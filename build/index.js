@@ -1,10 +1,9 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, ObjectID, passwordField, selectFields, usernameField;
+    var LocalStrategy, passwordField, selectFields, usernameField;
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
-    ObjectID = require('bson-objectid');
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
     passwordField = process.env.PASSWORD_FIELD || ndx.settings.PASSWORD_FIELD || 'password';
     if (ndx.settings.HAS_FORGOT || process.env.HAS_FORGOT) {
@@ -127,7 +126,7 @@
               password: ndx.generateHash(password)
             }
           };
-          newUser[ndx.settings.AUTO_ID] = ObjectID.generate();
+          newUser[ndx.settings.AUTO_ID] = ndx.generateID();
           ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
           ndx.user = newUser;
           return done(null, newUser);

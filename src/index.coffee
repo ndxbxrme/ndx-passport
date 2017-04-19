@@ -3,7 +3,6 @@
 module.exports = (ndx) ->
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
-  ObjectID = require 'bson-objectid'
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
   passwordField = process.env.PASSWORD_FIELD or ndx.settings.PASSWORD_FIELD or 'password'
 
@@ -100,7 +99,7 @@ module.exports = (ndx) ->
           local:
             email: email
             password: ndx.generateHash password
-        newUser[ndx.settings.AUTO_ID] = ObjectID.generate()
+        newUser[ndx.settings.AUTO_ID] = ndx.generateID()
         ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
         ndx.user = newUser
         done null, newUser
