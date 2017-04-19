@@ -3,12 +3,12 @@
   module.exports = function(ndx) {
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
       ndx.invite = {
-        fetchTemplate: function() {
-          return {
+        fetchTemplate: function(data, cb) {
+          return cb({
             subject: "You have been invited",
             body: 'h1 invite\np\n  a(href="#{code}")= code',
             from: "System"
-          };
+          });
         },
         users: ['admin', 'superadmin']
       };
@@ -54,23 +54,24 @@
             }
           }
         }, function(users) {
-          var inviteTemplate, token;
+          var token;
           if (users && users.length) {
             return next('User already exists');
           }
           token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true));
           token = req.protocol + "://" + req.hostname + "/invite/" + token;
-          inviteTemplate = ndx.invite.fetchTemplate(req.body);
-          if (ndx.email) {
-            ndx.email.send({
-              to: req.body.local.email,
-              from: inviteTemplate.from,
-              subject: inviteTemplate.subject,
-              body: inviteTemplate.body,
-              code: token
-            });
-          }
-          return res.end(token);
+          return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
+            if (ndx.email) {
+              ndx.email.send({
+                to: req.body.local.email,
+                from: inviteTemplate.from,
+                subject: inviteTemplate.subject,
+                body: inviteTemplate.body,
+                code: token
+              });
+            }
+            return res.end(token);
+          });
         });
       });
     }

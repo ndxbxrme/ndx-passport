@@ -3,10 +3,11 @@
 module.exports = (ndx) ->
   if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
     ndx.invite = 
-      fetchTemplate: ->
-        subject: "You have been invited"
-        body: 'h1 invite\np\n  a(href="#{code}")= code'
-        from: "System"
+      fetchTemplate: (data, cb) ->
+        cb
+          subject: "You have been invited"
+          body: 'h1 invite\np\n  a(href="#{code}")= code'
+          from: "System"
       users: ['admin', 'superadmin']
     ndx.app.post '/invite/accept', (req, res, next) ->
       try
@@ -40,12 +41,12 @@ module.exports = (ndx) ->
           return next 'User already exists'
         token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true))
         token = "#{req.protocol}://#{req.hostname}/invite/#{token}"
-        inviteTemplate = ndx.invite.fetchTemplate req.body
-        if ndx.email
-          ndx.email.send
-            to: req.body.local.email
-            from: inviteTemplate.from
-            subject: inviteTemplate.subject
-            body: inviteTemplate.body
-            code: token
-        res.end token
+        ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
+          if ndx.email
+            ndx.email.send
+              to: req.body.local.email
+              from: inviteTemplate.from
+              subject: inviteTemplate.subject
+              body: inviteTemplate.body
+              code: token
+          res.end token
