@@ -1,8 +1,11 @@
 (function() {
   'use strict';
+  var objtrans;
+
+  objtrans = require('objtrans');
+
   module.exports = function(ndx) {
-    var LocalStrategy, objtrans, passwordField, usernameField;
-    objtrans = require('objtrans');
+    var LocalStrategy, passwordField, usernameField;
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';

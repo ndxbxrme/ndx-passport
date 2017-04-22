@@ -1,6 +1,6 @@
 {
   "name": "ndx-passport",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "passport login for ndx-framework",
   "main": "build/index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "load-grunt-tasks": "^3.5.2"
   },
   "dependencies": {
-    "objtrans": "0.0.6",
+    "objtrans": "0.0.8",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0"
   }

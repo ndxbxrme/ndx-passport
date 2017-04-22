@@ -1,7 +1,7 @@
 'use strict'
+objtrans = require 'objtrans' 
 
 module.exports = (ndx) ->
-  objtrans = require 'objtrans'
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
