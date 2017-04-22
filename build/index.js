@@ -1,7 +1,8 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var LocalStrategy, passwordField, selectFields, usernameField;
+    var LocalStrategy, objtrans, passwordField, usernameField;
+    objtrans = require('objtrans');
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
@@ -28,30 +29,12 @@
       }
     };
     ndx.app.use(ndx.passport.initialize());
-    selectFields = function(input, output, fields) {
-      var field, inField, results;
-      results = [];
-      for (field in fields) {
-        inField = input[field];
-        if (inField) {
-          if (Object.prototype.toString.call(inField) === '[object Object]') {
-            output[field] = {};
-            results.push(selectFields(inField, output[field], fields[field]));
-          } else {
-            results.push(output[field] = inField);
-          }
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
     ndx.app.post('/api/refresh-login', function(req, res) {
       var output;
       if (ndx.user) {
         output = {};
         if (ndx.settings.PUBLIC_USER) {
-          selectFields(ndx.user, output, ndx.settings.PUBLIC_USER);
+          output = objtrans(ndx.user, ndx.settings.PUBLIC_USER);
         } else {
           output = ndx.user;
         }

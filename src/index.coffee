@@ -1,6 +1,7 @@
 'use strict'
 
 module.exports = (ndx) ->
+  objtrans = require 'objtrans'
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
@@ -25,22 +26,12 @@ module.exports = (ndx) ->
   
   ndx.app
   .use ndx.passport.initialize()
-  
-  selectFields = (input, output, fields) ->
-    for field of fields
-      inField = input[field]
-      if inField
-        if Object.prototype.toString.call(inField) is '[object Object]'
-          output[field] = {}
-          selectFields inField, output[field], fields[field]
-        else
-          output[field] = inField
 
   ndx.app.post '/api/refresh-login', (req, res) ->
     if ndx.user
       output = {}
       if ndx.settings.PUBLIC_USER
-        selectFields ndx.user, output, ndx.settings.PUBLIC_USER
+        output = objtrans ndx.user, ndx.settings.PUBLIC_USER
       else
         output = ndx.user
       res.end JSON.stringify output
@@ -49,6 +40,7 @@ module.exports = (ndx) ->
         res.end ''
       else
         throw ndx.UNAUTHORIZED   
+        
   ndx.app.get '/api/logout', (req, res) ->
     res.clearCookie 'token'
     ndx.user = null
