@@ -35,6 +35,12 @@
       return typeof cb === "function" ? cb() : void 0;
     };
     ndx.passport.syncCallback = syncCallback;
+    ndx.passport.on = function(name, callback) {
+      return callbacks[name].push(callback);
+    };
+    ndx.passport.off = function(name, callback) {
+      return callbacks[name].splice(callbacks[name].indexOf(callback), 1);
+    };
     ndx.passport.serializeUser(function(user, done) {
       return done(null, user[ndx.settings.AUTO_ID]);
     });

@@ -25,6 +25,10 @@ module.exports = (ndx) ->
         callback obj
     cb?()
   ndx.passport.syncCallback = syncCallback
+  ndx.passport.on = (name, callback) ->
+    callbacks[name].push callback
+  ndx.passport.off = (name, callback) ->
+    callbacks[name].splice callbacks[name].indexOf(callback), 1
   ndx.passport.serializeUser (user, done) ->
     done null, user[ndx.settings.AUTO_ID]
   ndx.passport.deserializeUser (id, done) ->
