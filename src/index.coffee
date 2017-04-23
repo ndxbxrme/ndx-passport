@@ -113,6 +113,8 @@ module.exports = (ndx) ->
         newUser[ndx.settings.AUTO_ID] = ndx.generateID()
         ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
         ndx.user = newUser
+        if ndx.auth
+          ndx.auth.extendUser()
         syncCallback 'signup', ndx.user
         done null, newUser
     , true 
@@ -131,6 +133,8 @@ module.exports = (ndx) ->
           ndx.passport.loginMessage = 'Wrong password'
           return done(null, false)
         ndx.user = users[0]
+        if ndx.auth
+          ndx.auth.extendUser()
         syncCallback 'login', ndx.user
         return done(null, users[0])
       else
