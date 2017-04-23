@@ -2,6 +2,12 @@
 objtrans = require 'objtrans' 
 
 module.exports = (ndx) ->
+  callbacks =
+    login: []
+    logout: []
+    signup: []
+    refreshLogin: []
+    updatePassword: []
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
@@ -13,6 +19,12 @@ module.exports = (ndx) ->
   if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
     require('./invite') ndx
 
+  syncCallback = (name, obj, cb) ->
+    if callbacks[name] and callbacks[name].length
+      for callback in callbacks[name]
+        callback obj
+    cb?()
+  ndx.passport.syncCallback = syncCallback
   ndx.passport.serializeUser (user, done) ->
     done null, user[ndx.settings.AUTO_ID]
   ndx.passport.deserializeUser (id, done) ->
@@ -34,6 +46,7 @@ module.exports = (ndx) ->
         output = objtrans ndx.user, ndx.settings.PUBLIC_USER
       else
         output = ndx.user
+      syncCallback 'refreshLogin', output
       res.end JSON.stringify output
     else
       if ndx.settings.SOFT_LOGIN
@@ -42,6 +55,7 @@ module.exports = (ndx) ->
         throw ndx.UNAUTHORIZED   
         
   ndx.app.get '/api/logout', (req, res) ->
+    syncCallback 'logout', ndx.user
     res.clearCookie 'token'
     ndx.user = null
     res.redirect '/'
@@ -57,6 +71,7 @@ module.exports = (ndx) ->
               email: ndx.user.local.email
               password: ndx.generateHash req.body.newPassword
           , where, null, true
+          syncCallback 'updatePassword', ndx.user
           res.end 'OK'
         else
           throw
@@ -94,6 +109,7 @@ module.exports = (ndx) ->
         newUser[ndx.settings.AUTO_ID] = ndx.generateID()
         ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
         ndx.user = newUser
+        syncCallback 'signup', ndx.user
         done null, newUser
     , true 
   ndx.passport.use 'local-login', new LocalStrategy
@@ -111,6 +127,7 @@ module.exports = (ndx) ->
           ndx.passport.loginMessage = 'Wrong password'
           return done(null, false)
         ndx.user = users[0]
+        syncCallback 'login', ndx.user
         return done(null, users[0])
       else
         ndx.passport.loginMessage = 'No user found'

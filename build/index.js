@@ -5,7 +5,14 @@
   objtrans = require('objtrans');
 
   module.exports = function(ndx) {
-    var LocalStrategy, passwordField, usernameField;
+    var LocalStrategy, callbacks, passwordField, syncCallback, usernameField;
+    callbacks = {
+      login: [],
+      logout: [],
+      signup: [],
+      refreshLogin: [],
+      updatePassword: []
+    };
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
@@ -16,6 +23,18 @@
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
       require('./invite')(ndx);
     }
+    syncCallback = function(name, obj, cb) {
+      var callback, i, len, ref;
+      if (callbacks[name] && callbacks[name].length) {
+        ref = callbacks[name];
+        for (i = 0, len = ref.length; i < len; i++) {
+          callback = ref[i];
+          callback(obj);
+        }
+      }
+      return typeof cb === "function" ? cb() : void 0;
+    };
+    ndx.passport.syncCallback = syncCallback;
     ndx.passport.serializeUser(function(user, done) {
       return done(null, user[ndx.settings.AUTO_ID]);
     });
@@ -41,6 +60,7 @@
         } else {
           output = ndx.user;
         }
+        syncCallback('refreshLogin', output);
         return res.end(JSON.stringify(output));
       } else {
         if (ndx.settings.SOFT_LOGIN) {
@@ -51,6 +71,7 @@
       }
     });
     ndx.app.get('/api/logout', function(req, res) {
+      syncCallback('logout', ndx.user);
       res.clearCookie('token');
       ndx.user = null;
       res.redirect('/');
@@ -68,6 +89,7 @@
                 password: ndx.generateHash(req.body.newPassword)
               }
             }, where, null, true);
+            syncCallback('updatePassword', ndx.user);
             return res.end('OK');
           } else {
             throw {
@@ -115,6 +137,7 @@
           newUser[ndx.settings.AUTO_ID] = ndx.generateID();
           ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
           ndx.user = newUser;
+          syncCallback('signup', ndx.user);
           return done(null, newUser);
         }
       }, true);
@@ -137,6 +160,7 @@
             return done(null, false);
           }
           ndx.user = users[0];
+          syncCallback('login', ndx.user);
           return done(null, users[0]);
         } else {
           ndx.passport.loginMessage = 'No user found';
