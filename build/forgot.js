@@ -26,7 +26,7 @@
           var token;
           if (users && users.length) {
             token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true));
-            token = req.protocol + "://" + req.hostname + "/invite/" + token;
+            token = req.protocol + "://" + req.hostname + "/forgot/" + token;
             return ndx.forgot.fetchTemplate(req.body, function(forgotTemplate) {
               if (ndx.email) {
                 ndx.email.send({

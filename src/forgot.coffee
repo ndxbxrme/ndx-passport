@@ -18,7 +18,7 @@ module.exports = (ndx) ->
       , (users) ->
         if users and users.length
           token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true))
-          token = "#{req.protocol}://#{req.hostname}/invite/#{token}"
+          token = "#{req.protocol}://#{req.hostname}/forgot/#{token}"
           ndx.forgot.fetchTemplate req.body, (forgotTemplate) ->
             if ndx.email
               ndx.email.send
