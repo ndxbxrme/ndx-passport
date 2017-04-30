@@ -26,7 +26,7 @@
           var token;
           if (users && users.length) {
             token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true));
-            token = req.protocol + "://" + req.hostname + "/forgot/" + token;
+            token = req.protocol + "://" + req.hostname + "/forgot?" + token;
             return ndx.forgot.fetchTemplate(req.body, function(forgotTemplate) {
               if (ndx.email) {
                 ndx.email.send({
@@ -47,12 +47,16 @@
       });
       return ndx.app.post('/forgot-update/:code', function(req, res, next) {
         var user, where;
-        user = ndx.parseToken(req.params.code, true);
+        user = JSON.parse(ndx.parseToken(req.params.code, true));
         if (req.body.password) {
-          where = {};
-          where[ndx.settings.AUTO_ID] = user;
+          where = {
+            local: {
+              email: user.email
+            }
+          };
           ndx.database.update(ndx.settings.USER_TABLE, {
             local: {
+              email: user.email,
               password: ndx.generateHash(req.body.password)
             }
           }, where);
