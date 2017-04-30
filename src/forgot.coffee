@@ -31,7 +31,7 @@ module.exports = (ndx) ->
             res.end token
         else
           return next 'No user found'
-    ndx.app.post '/forgot/:code', (req, res, next) ->
+    ndx.app.post '/forgot-update/:code', (req, res, next) ->
       user = ndx.parseToken req.params.code, true
       if req.body.password
         where = {}

@@ -45,7 +45,7 @@
           }
         });
       });
-      return ndx.app.post('/forgot/:code', function(req, res, next) {
+      return ndx.app.post('/forgot-update/:code', function(req, res, next) {
         var user, where;
         user = ndx.parseToken(req.params.code, true);
         if (req.body.password) {
