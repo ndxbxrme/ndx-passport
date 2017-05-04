@@ -53,10 +53,13 @@ module.exports = (ndx) ->
       syncCallback 'refreshLogin', output
       res.end JSON.stringify output
     else
+      res.end ''
+      ###
       if ndx.settings.SOFT_LOGIN
         res.end ''
       else
         throw ndx.UNAUTHORIZED   
+      ###
         
   ndx.app.get '/api/logout', (req, res) ->
     syncCallback 'logout', ndx.user

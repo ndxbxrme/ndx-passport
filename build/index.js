@@ -69,11 +69,14 @@
         syncCallback('refreshLogin', output);
         return res.end(JSON.stringify(output));
       } else {
-        if (ndx.settings.SOFT_LOGIN) {
-          return res.end('');
-        } else {
-          throw ndx.UNAUTHORIZED;
-        }
+        return res.end('');
+
+        /*
+        if ndx.settings.SOFT_LOGIN
+          res.end ''
+        else
+          throw ndx.UNAUTHORIZED
+         */
       }
     });
     ndx.app.get('/api/logout', function(req, res) {
