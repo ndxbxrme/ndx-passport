@@ -117,7 +117,7 @@ module.exports = (ndx) ->
         ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
         ndx.user = newUser
         if ndx.auth
-          ndx.auth.extendUser()
+          ndx.auth.extendUser ndx.user
         syncCallback 'signup', ndx.user
         done null, newUser
     , true 
@@ -137,7 +137,7 @@ module.exports = (ndx) ->
           return done(null, false)
         ndx.user = users[0]
         if ndx.auth
-          ndx.auth.extendUser()
+          ndx.auth.extendUser ndx.user
         syncCallback 'login', ndx.user
         return done(null, users[0])
       else
