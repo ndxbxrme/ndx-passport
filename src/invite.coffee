@@ -40,7 +40,8 @@ module.exports = (ndx) ->
         if users and users.length
           return next 'User already exists'
         token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true))
-        token = "#{req.protocol}://#{req.hostname}/invite/#{token}"
+        host = process.env.HOST or ndx.settings.HOST or "#{req.protocol}://#{req.hostname}"
+        token = "#{host}/invite/#{token}"
         ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
           if ndx.email
             ndx.email.send

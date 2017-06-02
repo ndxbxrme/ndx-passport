@@ -54,12 +54,13 @@
             }
           }
         }, function(users) {
-          var token;
+          var host, token;
           if (users && users.length) {
             return next('User already exists');
           }
           token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true));
-          token = req.protocol + "://" + req.hostname + "/invite/" + token;
+          host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
+          token = host + "/invite/" + token;
           return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
             if (ndx.email) {
               ndx.email.send({
