@@ -2,6 +2,16 @@
   'use strict';
   module.exports = function(ndx) {
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
+      if (typeof btoa === 'undefined') {
+        global.btoa = function(str) {
+          return new Buffer(str).toString('base64');
+        };
+      }
+      if (typeof atob === 'undefined') {
+        global.atob = function(b64Encoded) {
+          return new Buffer(b64Encoded, 'base64').toString();
+        };
+      }
       ndx.invite = {
         fetchTemplate: function(data, cb) {
           return cb({
@@ -15,7 +25,7 @@
       ndx.app.post('/invite/accept', function(req, res, next) {
         var e, error, user;
         try {
-          user = JSON.parse(ndx.parseToken(req.body.code, true));
+          user = JSON.parse(ndx.parseToken(atob(req.body.code), true));
         } catch (error) {
           e = error;
           return next(e);
@@ -39,7 +49,7 @@
       ndx.app.get('/invite/:code', function(req, res, next) {
         var e, error, user;
         try {
-          user = JSON.parse(ndx.parseToken(req.params.code, true));
+          user = JSON.parse(ndx.parseToken(atob(req.params.code), true));
         } catch (error) {
           e = error;
           return next(e);
@@ -58,7 +68,7 @@
           if (users && users.length) {
             return next('User already exists');
           }
-          token = encodeURIComponent(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true));
+          token = encodeURIComponent(btoa(ndx.generateToken(JSON.stringify(req.body), req.ip, 4 * 24, true)));
           host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
           token = host + "/invite/" + token;
           return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
