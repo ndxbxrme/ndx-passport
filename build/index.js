@@ -184,14 +184,14 @@
       }, true);
     }));
     ndx.app.post('/api/signup', ndx.passport.authenticate('local-signup', {
-      failureRedirect: '/api/badlogin'
+      failureRedirect: '/badlogin'
     }), ndx.postAuthenticate);
     ndx.app.post('/api/login', ndx.passport.authenticate('local-login', {
-      failureRedirect: '/api/badlogin'
+      failureRedirect: '/badlogin'
     }), ndx.postAuthenticate);
     ndx.app.get('/api/connect/local', function(req, res) {});
     ndx.app.post('/api/connect/local', ndx.passport.authorize('local-signup', {
-      failureRedirect: '/api/badlogin'
+      failureRedirect: '/badlogin'
     }));
     ndx.app.get('/api/unlink/local', function(req, res) {
       var user;
@@ -202,7 +202,7 @@
         res.redirect('/profile');
       });
     });
-    return ndx.app.get('/api/badlogin', function(req, res) {
+    return ndx.app.get('/badlogin', function(req, res) {
       throw {
         status: 401,
         message: ndx.passport.loginMessage

@@ -144,14 +144,14 @@ module.exports = (ndx) ->
         ndx.passport.loginMessage = 'No user found'
         return done(null, false)
     , true
-  ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/api/badlogin')
+  ndx.app.post '/api/signup', ndx.passport.authenticate('local-signup', failureRedirect: '/badlogin')
   , ndx.postAuthenticate
-  ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/api/badlogin')
+  ndx.app.post '/api/login', ndx.passport.authenticate('local-login', failureRedirect: '/badlogin')
   , ndx.postAuthenticate
   ndx.app.get '/api/connect/local', (req, res) ->
     #send flash message
     return
-  ndx.app.post '/api/connect/local', ndx.passport.authorize('local-signup', failureRedirect: '/api/badlogin')
+  ndx.app.post '/api/connect/local', ndx.passport.authorize('local-signup', failureRedirect: '/badlogin')
   ndx.app.get '/api/unlink/local', (req, res) ->
     user = ndx.user
     user.local.email = undefined
@@ -160,7 +160,7 @@ module.exports = (ndx) ->
       res.redirect '/profile'
       return
     return
-  ndx.app.get '/api/badlogin', (req, res) ->
+  ndx.app.get '/badlogin', (req, res) ->
     throw
       status: 401
       message: ndx.passport.loginMessage
