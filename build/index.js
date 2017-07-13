@@ -66,6 +66,9 @@
         } else {
           output = ndx.user;
         }
+        if (req.cookies.impersonate) {
+          output.impersonating = true;
+        }
         syncCallback('refreshLogin', output);
         return res.end(JSON.stringify(output));
       } else {

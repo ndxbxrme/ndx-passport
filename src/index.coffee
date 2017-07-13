@@ -50,6 +50,8 @@ module.exports = (ndx) ->
         output = objtrans ndx.user, ndx.settings.PUBLIC_USER
       else
         output = ndx.user
+      if req.cookies.impersonate
+        output.impersonating = true
       syncCallback 'refreshLogin', output
       res.end JSON.stringify output
     else
