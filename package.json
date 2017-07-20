@@ -1,6 +1,6 @@
 {
   "name": "ndx-passport",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "passport login for ndx-framework",
   "main": "build/index.js",
   "scripts": {
