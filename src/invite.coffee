@@ -11,7 +11,7 @@ module.exports = (ndx) ->
     userFromToken = (token, cb) ->
       parseToken = (token, cb) ->
         try
-          cb null, JSON.parse ndx.parseToken(atob(token), true)
+          cb null, JSON.parse ndx.parseToken(atob(decodeURIComponent(token)), true)
         catch e
           return cb e
       if ndx.shortToken
@@ -48,6 +48,8 @@ module.exports = (ndx) ->
           , (users) ->
             if users and users.length
               return next 'User already exists'
+            delete req.body.user.roles
+            delete req.body.user.type
             ndx.extend user, req.body.user
             user.local.password = ndx.generateHash user.local.password
             ndx.database.insert ndx.settings.USER_TABLE, user
@@ -56,7 +58,7 @@ module.exports = (ndx) ->
       userFromToken req.params.code, (err, user) ->
         if err
           return next err
-        res.redirect "/invited?#{encodeURIComponent(req.params.code)}"
+        res.redirect "/invited?#{encodeURIComponent(req.params.code)}++#{btoa(JSON.stringify(user))}"
     ndx.app.post '/api/get-invite-code', ndx.authenticate(ndx.invite.users), (req, res, next) ->
       ndx.database.select ndx.settings.USER_TABLE,
         where:

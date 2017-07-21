@@ -18,7 +18,7 @@
         parseToken = function(token, cb) {
           var e, error;
           try {
-            return cb(null, JSON.parse(ndx.parseToken(atob(token), true)));
+            return cb(null, JSON.parse(ndx.parseToken(atob(decodeURIComponent(token)), true)));
           } catch (error) {
             e = error;
             return cb(e);
@@ -72,6 +72,8 @@
               if (users && users.length) {
                 return next('User already exists');
               }
+              delete req.body.user.roles;
+              delete req.body.user.type;
               ndx.extend(user, req.body.user);
               user.local.password = ndx.generateHash(user.local.password);
               ndx.database.insert(ndx.settings.USER_TABLE, user);
@@ -85,7 +87,7 @@
           if (err) {
             return next(err);
           }
-          return res.redirect("/invited?" + (encodeURIComponent(req.params.code)));
+          return res.redirect("/invited?" + (encodeURIComponent(req.params.code)) + "++" + (btoa(JSON.stringify(user))));
         });
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(ndx.invite.users), function(req, res, next) {
