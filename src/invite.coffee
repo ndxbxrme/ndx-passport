@@ -77,5 +77,6 @@ module.exports = (ndx) ->
                 from: inviteTemplate.from
                 subject: inviteTemplate.subject
                 body: inviteTemplate.body
+                data: req.body
                 code: token
             res.end token
