@@ -59,7 +59,7 @@ module.exports = (ndx) ->
         if err
           return next err
         res.redirect "/invited?#{encodeURIComponent(req.params.code)}++#{btoa(JSON.stringify(user))}"
-    ndx.app.post '/api/get-invite-code', ndx.authenticate(ndx.invite.users), (req, res, next) ->
+    ndx.app.post '/api/get-invite-code', ndx.authenticate(), (req, res, next) ->
       ndx.database.select ndx.settings.USER_TABLE,
         where:
           local:

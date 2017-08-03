@@ -90,7 +90,7 @@
           return res.redirect("/invited?" + (encodeURIComponent(req.params.code)) + "++" + (btoa(JSON.stringify(user))));
         });
       });
-      return ndx.app.post('/api/get-invite-code', ndx.authenticate(ndx.invite.users), function(req, res, next) {
+      return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
         return ndx.database.select(ndx.settings.USER_TABLE, {
           where: {
             local: {
