@@ -53,6 +53,8 @@ module.exports = (ndx) ->
             ndx.extend user, req.body.user
             user.local.password = ndx.generateHash user.local.password
             ndx.database.insert ndx.settings.USER_TABLE, user
+            if ndx.shortToken
+              ndx.shortToken.remove req.body.code
             res.end 'OK'
     ndx.app.get '/invite/:code', (req, res, next) ->
       userFromToken req.params.code, (err, user) ->

@@ -77,6 +77,9 @@
               ndx.extend(user, req.body.user);
               user.local.password = ndx.generateHash(user.local.password);
               ndx.database.insert(ndx.settings.USER_TABLE, user);
+              if (ndx.shortToken) {
+                ndx.shortToken.remove(req.body.code);
+              }
               return res.end('OK');
             });
           }
