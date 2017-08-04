@@ -56,6 +56,28 @@
         return scopes;
       }
     };
+    ndx.passport.fetchByEmail = function(email, done) {
+      return ndx.database.select(ndx.settings.USER_TABLE, {
+        where: {
+          local: {
+            email: email
+          }
+        }
+      }, done);
+    };
+    ndx.passport.createUser = function(email, password) {
+      var newUser;
+      newUser = {
+        email: email,
+        local: {
+          email: email,
+          password: ndx.generateHash(password)
+        }
+      };
+      newUser[ndx.settings.AUTO_ID] = ndx.generateID();
+      ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
+      return newUser;
+    };
     ndx.app.use(ndx.passport.initialize());
     ndx.app.post('/api/refresh-login', function(req, res) {
       var output;
@@ -127,28 +149,12 @@
       passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
-      return ndx.database.select(ndx.settings.USER_TABLE, {
-        where: {
-          local: {
-            email: email
-          }
-        }
-      }, function(users) {
-        var newUser;
+      return ndx.passport.fetchByEmail(email, function(users) {
         if (users && users.length) {
           ndx.passport.loginMessage = 'That email is already taken.';
           return done(null, false);
         } else {
-          newUser = {
-            email: email,
-            local: {
-              email: email,
-              password: ndx.generateHash(password)
-            }
-          };
-          newUser[ndx.settings.AUTO_ID] = ndx.generateID();
-          ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
-          ndx.user = newUser;
+          ndx.user = ndx.passport.createUser(email, password);
           if (ndx.auth) {
             ndx.auth.extendUser(ndx.user);
           }
@@ -162,13 +168,7 @@
       passwordField: passwordField,
       passReqToCallback: true
     }, function(req, email, password, done) {
-      return ndx.database.select(ndx.settings.USER_TABLE, {
-        where: {
-          local: {
-            email: email
-          }
-        }
-      }, function(users) {
+      return ndx.passport.fetchByEmail(email, function(users) {
         if (users && users.length) {
           if (!ndx.validPassword(password, users[0].local.password)) {
             ndx.passport.loginMessage = 'Wrong password';

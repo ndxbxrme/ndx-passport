@@ -39,7 +39,21 @@ module.exports = (ndx) ->
       return scopes[0]
     else
       return scopes
-  
+  ndx.passport.fetchByEmail = (email, done) ->
+    ndx.database.select ndx.settings.USER_TABLE,
+      where:
+        local:
+          email: email
+    , done
+  ndx.passport.createUser = (email, password) ->
+    newUser = 
+      email: email
+      local:
+        email: email
+        password: ndx.generateHash password
+    newUser[ndx.settings.AUTO_ID] = ndx.generateID()
+    ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
+    newUser  
   ndx.app
   .use ndx.passport.initialize()
 
@@ -94,30 +108,18 @@ module.exports = (ndx) ->
       throw
         status: 401
         message: 'Not logged in'
-    
-    
+
   ndx.passport.use 'local-signup', new LocalStrategy
     usernameField: usernameField
     passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
-    ndx.database.select ndx.settings.USER_TABLE,
-      where:
-        local:
-          email: email
-    , (users) ->
+    ndx.passport.fetchByEmail email, (users) ->
       if users and users.length
         ndx.passport.loginMessage = 'That email is already taken.'
         return done(null, false)
       else
-        newUser = 
-          email: email
-          local:
-            email: email
-            password: ndx.generateHash password
-        newUser[ndx.settings.AUTO_ID] = ndx.generateID()
-        ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
-        ndx.user = newUser
+        ndx.user = ndx.passport.createUser email, password
         if ndx.auth
           ndx.auth.extendUser ndx.user
         syncCallback 'signup', ndx.user
@@ -128,11 +130,7 @@ module.exports = (ndx) ->
     passwordField: passwordField
     passReqToCallback: true
   , (req, email, password, done) ->
-    ndx.database.select ndx.settings.USER_TABLE,
-      where:
-        local:
-          email: email
-    , (users) ->
+    ndx.passport.fetchByEmail email, (users) ->
       if users and users.length
         if not ndx.validPassword password, users[0].local.password
           ndx.passport.loginMessage = 'Wrong password'
