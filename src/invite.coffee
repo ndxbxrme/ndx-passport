@@ -2,6 +2,7 @@
 
 module.exports = (ndx) ->
   if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
+    ndx.passport.inviteTokenHours = 7 * 24
     if typeof btoa is 'undefined'
       global.btoa = (str) ->
         new Buffer(str).toString 'base64'
@@ -23,7 +24,7 @@ module.exports = (ndx) ->
       else
         parseToken token, cb
     tokenFromUser = (user, cb) ->
-      token = encodeURIComponent(btoa(ndx.generateToken(JSON.stringify(user), null, 4 * 24, true)))
+      token = encodeURIComponent(btoa(ndx.generateToken(JSON.stringify(user), null, ndx.passport.inviteTokenHours, true)))
       if ndx.shortToken
         ndx.shortToken.generate token, (shortToken) ->
           cb shortToken
@@ -55,6 +56,9 @@ module.exports = (ndx) ->
             ndx.database.insert ndx.settings.USER_TABLE, user
             if ndx.shortToken
               ndx.shortToken.remove req.body.code
+            ndx.passport.syncCallback 'inviteAccepted',
+              obj: user
+              code: req.body.code
             res.end 'OK'
     ndx.app.get '/invite/:code', (req, res, next) ->
       userFromToken req.params.code, (err, user) ->
@@ -62,23 +66,29 @@ module.exports = (ndx) ->
           return next err
         res.redirect "/invited?#{encodeURIComponent(req.params.code)}++#{btoa(JSON.stringify(user))}"
     ndx.app.post '/api/get-invite-code', ndx.authenticate(), (req, res, next) ->
-      ndx.database.select ndx.settings.USER_TABLE,
-        where:
-          local:
-            email: req.body.local.email
-      , (users) ->
-        if users and users.length
-          return next 'User already exists'
-        tokenFromUser req.body, (token) ->
-          host = process.env.HOST or ndx.settings.HOST or "#{req.protocol}://#{req.hostname}"
-          token = "#{host}/invite/#{token}"
-          ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
-            if ndx.email
-              ndx.email.send
-                to: req.body.local.email
-                from: inviteTemplate.from
-                subject: inviteTemplate.subject
-                body: inviteTemplate.body
-                data: req.body
+      ((user) ->
+        ndx.database.select ndx.settings.USER_TABLE,
+          where:
+            local:
+              email: req.body.local.email
+        , (users) ->
+          if users and users.length
+            return next 'User already exists'
+          tokenFromUser req.body, (token) ->
+            host = process.env.HOST or ndx.settings.HOST or "#{req.protocol}://#{req.hostname}"
+            ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
+              if ndx.email
+                ndx.email.send
+                  to: req.body.local.email
+                  from: inviteTemplate.from
+                  subject: inviteTemplate.subject
+                  body: inviteTemplate.body
+                  data: req.body
+                  code: "#{host}/invite/#{token}"
+              ndx.passport.syncCallback 'invited',
+                user: user
+                obj: req.body
                 code: token
-            res.end token
+                expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
+              res.end "#{host}/invite/#{token}"
+      )(ndx.user)

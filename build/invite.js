@@ -3,6 +3,7 @@
   module.exports = function(ndx) {
     var tokenFromUser, userFromToken;
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
+      ndx.passport.inviteTokenHours = 7 * 24;
       if (typeof btoa === 'undefined') {
         global.btoa = function(str) {
           return new Buffer(str).toString('base64');
@@ -38,7 +39,7 @@
       };
       tokenFromUser = function(user, cb) {
         var token;
-        token = encodeURIComponent(btoa(ndx.generateToken(JSON.stringify(user), null, 4 * 24, true)));
+        token = encodeURIComponent(btoa(ndx.generateToken(JSON.stringify(user), null, ndx.passport.inviteTokenHours, true)));
         if (ndx.shortToken) {
           return ndx.shortToken.generate(token, function(shortToken) {
             return cb(shortToken);
@@ -80,6 +81,10 @@
               if (ndx.shortToken) {
                 ndx.shortToken.remove(req.body.code);
               }
+              ndx.passport.syncCallback('inviteAccepted', {
+                obj: user,
+                code: req.body.code
+              });
               return res.end('OK');
             });
           }
@@ -94,35 +99,42 @@
         });
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
-        return ndx.database.select(ndx.settings.USER_TABLE, {
-          where: {
-            local: {
-              email: req.body.local.email
-            }
-          }
-        }, function(users) {
-          if (users && users.length) {
-            return next('User already exists');
-          }
-          return tokenFromUser(req.body, function(token) {
-            var host;
-            host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
-            token = host + "/invite/" + token;
-            return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
-              if (ndx.email) {
-                ndx.email.send({
-                  to: req.body.local.email,
-                  from: inviteTemplate.from,
-                  subject: inviteTemplate.subject,
-                  body: inviteTemplate.body,
-                  data: req.body,
-                  code: token
-                });
+        return (function(user) {
+          return ndx.database.select(ndx.settings.USER_TABLE, {
+            where: {
+              local: {
+                email: req.body.local.email
               }
-              return res.end(token);
+            }
+          }, function(users) {
+            if (users && users.length) {
+              return next('User already exists');
+            }
+            return tokenFromUser(req.body, function(token) {
+              var host;
+              host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
+              return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
+                if (ndx.email) {
+                  ndx.email.send({
+                    to: req.body.local.email,
+                    from: inviteTemplate.from,
+                    subject: inviteTemplate.subject,
+                    body: inviteTemplate.body,
+                    data: req.body,
+                    code: host + "/invite/" + token
+                  });
+                }
+                ndx.passport.syncCallback('invited', {
+                  user: user,
+                  obj: req.body,
+                  code: token,
+                  expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
+                });
+                return res.end(host + "/invite/" + token);
+              });
             });
           });
-        });
+        })(ndx.user);
       });
     }
   };

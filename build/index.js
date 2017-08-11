@@ -11,7 +11,9 @@
       logout: [],
       signup: [],
       refreshLogin: [],
-      updatePassword: []
+      updatePassword: [],
+      invited: [],
+      inviteAccepted: []
     };
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;

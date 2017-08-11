@@ -8,6 +8,8 @@ module.exports = (ndx) ->
     signup: []
     refreshLogin: []
     updatePassword: []
+    invited: []
+    inviteAccepted: []
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
