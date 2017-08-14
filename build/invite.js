@@ -59,6 +59,7 @@
         users: ['admin', 'superadmin']
       };
       ndx.app.post('/invite/accept', function(req, res, next) {
+        console.log('accept inviet', req.body.code);
         return userFromToken(req.body.code, function(err, user) {
           if (err) {
             return next(err);

@@ -38,6 +38,7 @@ module.exports = (ndx) ->
           from: "System"
       users: ['admin', 'superadmin']
     ndx.app.post '/invite/accept', (req, res, next) ->
+      console.log 'accept inviet', req.body.code
       userFromToken req.body.code, (err, user) ->
         if err
           return next err
