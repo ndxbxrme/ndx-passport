@@ -38,7 +38,6 @@ module.exports = (ndx) ->
           from: "System"
       users: ['admin', 'superadmin']
     ndx.app.post '/invite/accept', (req, res, next) ->
-      console.log 'accept inviet', req.body.code
       userFromToken req.body.code, (err, user) ->
         if err
           return next err
@@ -68,28 +67,33 @@ module.exports = (ndx) ->
         res.redirect "/invited?#{encodeURIComponent(req.params.code)}++#{btoa(JSON.stringify(user))}"
     ndx.app.post '/api/get-invite-code', ndx.authenticate(), (req, res, next) ->
       ((user) ->
-        ndx.database.select ndx.settings.USER_TABLE,
-          where:
-            local:
-              email: req.body.local.email
-        , (users) ->
+        ndx.passport.fetchByEmail req.body.local.email, (users) ->
           if users and users.length
-            return next 'User already exists'
-          tokenFromUser req.body, (token) ->
-            host = process.env.HOST or ndx.settings.HOST or "#{req.protocol}://#{req.hostname}"
-            ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
-              if ndx.email
-                ndx.email.send
-                  to: req.body.local.email
-                  from: inviteTemplate.from
-                  subject: inviteTemplate.subject
-                  body: inviteTemplate.body
-                  data: req.body
-                  code: "#{host}/invite/#{token}"
-              ndx.passport.syncCallback 'invited',
-                user: user
-                obj: req.body
-                code: token
-                expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
-              res.end "#{host}/invite/#{token}"
+            obj =
+              error: 'User already exists'
+              dbUser: users[0]
+              newUser: req.body
+            ndx.passport.asyncCallback 'inviteUserExists', obj, (result) ->
+              if obj.error
+                return next obj.error
+              else
+                return res.json obj
+          else
+            tokenFromUser req.body, (token) ->
+              host = process.env.HOST or ndx.settings.HOST or "#{req.protocol}://#{req.hostname}"
+              ndx.invite.fetchTemplate req.body, (inviteTemplate) ->
+                if ndx.email
+                  ndx.email.send
+                    to: req.body.local.email
+                    from: inviteTemplate.from
+                    subject: inviteTemplate.subject
+                    body: inviteTemplate.body
+                    data: req.body
+                    code: "#{host}/invite/#{token}"
+                ndx.passport.syncCallback 'invited',
+                  user: user
+                  obj: req.body
+                  code: token
+                  expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
+                res.end "#{host}/invite/#{token}"
       )(ndx.user)

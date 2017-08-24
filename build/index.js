@@ -1,11 +1,13 @@
 (function() {
   'use strict';
-  var objtrans;
+  var async, objtrans;
 
   objtrans = require('objtrans');
 
+  async = require('async');
+
   module.exports = function(ndx) {
-    var LocalStrategy, callbacks, passwordField, syncCallback, usernameField;
+    var LocalStrategy, asyncCallback, callbacks, passwordField, syncCallback, usernameField;
     callbacks = {
       login: [],
       logout: [],
@@ -13,7 +15,8 @@
       refreshLogin: [],
       updatePassword: [],
       invited: [],
-      inviteAccepted: []
+      inviteAccepted: [],
+      inviteUserExists: []
     };
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
@@ -37,6 +40,23 @@
       return typeof cb === "function" ? cb() : void 0;
     };
     ndx.passport.syncCallback = syncCallback;
+    asyncCallback = function(name, obj, cb) {
+      var truth;
+      truth = false;
+      if (callbacks[name] && callbacks[name].length) {
+        return async.eachSeries(callbacks[name], function(cbitem, callback) {
+          return cbitem(obj, function(result) {
+            truth = truth || result;
+            return callback();
+          });
+        }, function() {
+          return typeof cb === "function" ? cb(truth) : void 0;
+        });
+      } else {
+        return typeof cb === "function" ? cb(true) : void 0;
+      }
+    };
+    ndx.passport.asyncCallback = asyncCallback;
     ndx.passport.on = function(name, callback) {
       return callbacks[name].push(callback);
     };

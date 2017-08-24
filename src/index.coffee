@@ -1,5 +1,6 @@
 'use strict'
-objtrans = require 'objtrans' 
+objtrans = require 'objtrans'
+async = require 'async'
 
 module.exports = (ndx) ->
   callbacks =
@@ -10,6 +11,7 @@ module.exports = (ndx) ->
     updatePassword: []
     invited: []
     inviteAccepted: []
+    inviteUserExists: []
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
@@ -27,6 +29,18 @@ module.exports = (ndx) ->
         callback obj
     cb?()
   ndx.passport.syncCallback = syncCallback
+  asyncCallback = (name, obj, cb) ->
+    truth = false
+    if callbacks[name] and callbacks[name].length
+      async.eachSeries callbacks[name], (cbitem, callback) ->
+        cbitem obj, (result) ->
+          truth = truth or result
+          callback()
+      , ->
+        cb? truth
+    else
+      cb? true
+  ndx.passport.asyncCallback = asyncCallback
   ndx.passport.on = (name, callback) ->
     callbacks[name].push callback
   ndx.passport.off = (name, callback) ->

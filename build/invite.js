@@ -59,7 +59,6 @@
         users: ['admin', 'superadmin']
       };
       ndx.app.post('/invite/accept', function(req, res, next) {
-        console.log('accept inviet', req.body.code);
         return userFromToken(req.body.code, function(err, user) {
           if (err) {
             return next(err);
@@ -101,39 +100,46 @@
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
         return (function(user) {
-          return ndx.database.select(ndx.settings.USER_TABLE, {
-            where: {
-              local: {
-                email: req.body.local.email
-              }
-            }
-          }, function(users) {
+          return ndx.passport.fetchByEmail(req.body.local.email, function(users) {
+            var obj;
             if (users && users.length) {
-              return next('User already exists');
-            }
-            return tokenFromUser(req.body, function(token) {
-              var host;
-              host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
-              return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
-                if (ndx.email) {
-                  ndx.email.send({
-                    to: req.body.local.email,
-                    from: inviteTemplate.from,
-                    subject: inviteTemplate.subject,
-                    body: inviteTemplate.body,
-                    data: req.body,
-                    code: host + "/invite/" + token
-                  });
+              obj = {
+                error: 'User already exists',
+                dbUser: users[0],
+                newUser: req.body
+              };
+              return ndx.passport.asyncCallback('inviteUserExists', obj, function(result) {
+                if (obj.error) {
+                  return next(obj.error);
+                } else {
+                  return res.json(obj);
                 }
-                ndx.passport.syncCallback('invited', {
-                  user: user,
-                  obj: req.body,
-                  code: token,
-                  expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
-                });
-                return res.end(host + "/invite/" + token);
               });
-            });
+            } else {
+              return tokenFromUser(req.body, function(token) {
+                var host;
+                host = process.env.HOST || ndx.settings.HOST || (req.protocol + "://" + req.hostname);
+                return ndx.invite.fetchTemplate(req.body, function(inviteTemplate) {
+                  if (ndx.email) {
+                    ndx.email.send({
+                      to: req.body.local.email,
+                      from: inviteTemplate.from,
+                      subject: inviteTemplate.subject,
+                      body: inviteTemplate.body,
+                      data: req.body,
+                      code: host + "/invite/" + token
+                    });
+                  }
+                  ndx.passport.syncCallback('invited', {
+                    user: user,
+                    obj: req.body,
+                    code: token,
+                    expires: new Date().valueOf() + (ndx.passport.inviteTokenHours * 60 * 60 * 1000)
+                  });
+                  return res.end(host + "/invite/" + token);
+                });
+              });
+            }
           });
         })(ndx.user);
       });
