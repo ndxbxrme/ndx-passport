@@ -56,7 +56,9 @@
             from: "System"
           });
         },
-        users: ['admin', 'superadmin']
+        users: ['admin', 'superadmin'],
+        userFromToken: userFromToken,
+        tokenFromUser: tokenFromUser
       };
       ndx.app.post('/invite/accept', function(req, res, next) {
         return userFromToken(req.body.code, function(err, user) {
@@ -77,15 +79,16 @@
               delete req.body.user.type;
               ndx.extend(user, req.body.user);
               user.local.password = ndx.generateHash(user.local.password);
-              ndx.database.insert(ndx.settings.USER_TABLE, user);
-              if (ndx.shortToken) {
-                ndx.shortToken.remove(req.body.code);
-              }
-              ndx.passport.syncCallback('inviteAccepted', {
-                obj: user,
-                code: req.body.code
+              return ndx.database.insert(ndx.settings.USER_TABLE, user, function() {
+                if (ndx.shortToken) {
+                  ndx.shortToken.remove(req.body.code);
+                }
+                ndx.passport.syncCallback('inviteAccepted', {
+                  obj: user,
+                  code: req.body.code
+                });
+                return res.end('OK');
               });
-              return res.end('OK');
             });
           }
         });

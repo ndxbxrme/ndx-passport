@@ -37,6 +37,8 @@ module.exports = (ndx) ->
           body: 'h1 invite\np\n  a(href="#{code}")= code'
           from: "System"
       users: ['admin', 'superadmin']
+      userFromToken: userFromToken
+      tokenFromUser: tokenFromUser
     ndx.app.post '/invite/accept', (req, res, next) ->
       userFromToken req.body.code, (err, user) ->
         if err
@@ -53,13 +55,13 @@ module.exports = (ndx) ->
             delete req.body.user.type
             ndx.extend user, req.body.user
             user.local.password = ndx.generateHash user.local.password
-            ndx.database.insert ndx.settings.USER_TABLE, user
-            if ndx.shortToken
-              ndx.shortToken.remove req.body.code
-            ndx.passport.syncCallback 'inviteAccepted',
-              obj: user
-              code: req.body.code
-            res.end 'OK'
+            ndx.database.insert ndx.settings.USER_TABLE, user, ->
+              if ndx.shortToken
+                ndx.shortToken.remove req.body.code
+              ndx.passport.syncCallback 'inviteAccepted',
+                obj: user
+                code: req.body.code
+              res.end 'OK'
     ndx.app.get '/invite/:code', (req, res, next) ->
       userFromToken req.params.code, (err, user) ->
         if err
