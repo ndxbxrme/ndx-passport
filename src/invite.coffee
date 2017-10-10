@@ -9,6 +9,8 @@ module.exports = (ndx) ->
     if typeof atob is 'undefined'
       global.atob = (b64Encoded) ->
         new Buffer(b64Encoded, 'base64').toString()
+    b64Enc = (str) ->
+      btoa 
     userFromToken = (token, cb) ->
       parseToken = (token, cb) ->
         try
@@ -62,11 +64,11 @@ module.exports = (ndx) ->
                 obj: user
                 code: req.body.code
               res.end 'OK'
-    ndx.app.get '/invite/:code', (req, res, next) ->
+    ndx.app.get '/invite/user/:code', (req, res, next) ->
       userFromToken req.params.code, (err, user) ->
         if err
           return next err
-        res.redirect "/invited?#{encodeURIComponent(req.params.code)}++#{btoa(JSON.stringify(user))}"
+        res.json user
     ndx.app.post '/api/get-invite-code', ndx.authenticate(), (req, res, next) ->
       ((user) ->
         ndx.passport.fetchByEmail req.body.local.email, (users) ->

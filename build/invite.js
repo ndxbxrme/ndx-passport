@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var tokenFromUser, userFromToken;
+    var b64Enc, tokenFromUser, userFromToken;
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
       ndx.passport.inviteTokenHours = 7 * 24;
       if (typeof btoa === 'undefined') {
@@ -14,6 +14,9 @@
           return new Buffer(b64Encoded, 'base64').toString();
         };
       }
+      b64Enc = function(str) {
+        return btoa;
+      };
       userFromToken = function(token, cb) {
         var parseToken;
         parseToken = function(token, cb) {
@@ -93,12 +96,12 @@
           }
         });
       });
-      ndx.app.get('/invite/:code', function(req, res, next) {
+      ndx.app.get('/invite/user/:code', function(req, res, next) {
         return userFromToken(req.params.code, function(err, user) {
           if (err) {
             return next(err);
           }
-          return res.redirect("/invited?" + (encodeURIComponent(req.params.code)) + "++" + (btoa(JSON.stringify(user))));
+          return res.json(user);
         });
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
