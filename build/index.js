@@ -114,7 +114,7 @@
           output.impersonating = true;
         }
         syncCallback('refreshLogin', output);
-        return res.end(JSON.stringify(output));
+        return res.json(output);
       } else {
         return res.end('');
 
