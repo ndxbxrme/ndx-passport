@@ -68,7 +68,10 @@ module.exports = (ndx) ->
       userFromToken req.params.code, (err, user) ->
         if err
           return next err
-        res.json user
+        ndx.passport.fetchByEmail user.local.email, (users) ->
+          if users and users.length
+            user.$exists = true
+          res.json user
     ndx.app.post '/api/get-invite-code', ndx.authenticate(), (req, res, next) ->
       ((user) ->
         ndx.passport.fetchByEmail req.body.local.email, (users) ->

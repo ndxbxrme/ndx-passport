@@ -101,7 +101,12 @@
           if (err) {
             return next(err);
           }
-          return res.json(user);
+          return ndx.passport.fetchByEmail(user.local.email, function(users) {
+            if (users && users.length) {
+              user.$exists = true;
+            }
+            return res.json(user);
+          });
         });
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
