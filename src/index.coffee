@@ -139,7 +139,7 @@ module.exports = (ndx) ->
         if ndx.auth
           ndx.auth.extendUser ndx.user
         syncCallback 'signup', ndx.user
-        done null, newUser
+        done null, ndx.user
     , true 
   ndx.passport.use 'local-login', new LocalStrategy
     usernameField: usernameField

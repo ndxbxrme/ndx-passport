@@ -181,7 +181,7 @@
             ndx.auth.extendUser(ndx.user);
           }
           syncCallback('signup', ndx.user);
-          return done(null, newUser);
+          return done(null, ndx.user);
         }
       }, true);
     }));
