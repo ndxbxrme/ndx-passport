@@ -113,8 +113,9 @@
         if (req.cookies.impersonate) {
           output.impersonating = true;
         }
-        syncCallback('refreshLogin', output);
-        return res.json(output);
+        return asyncCallback('refreshLogin', output, function() {
+          return res.json(output);
+        });
       } else {
         return res.end('');
 

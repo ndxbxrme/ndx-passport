@@ -82,8 +82,8 @@ module.exports = (ndx) ->
         output = ndx.user
       if req.cookies.impersonate
         output.impersonating = true
-      syncCallback 'refreshLogin', output
-      res.json output
+      asyncCallback 'refreshLogin', output, ->
+        res.json output
     else
       res.end ''
       ###
