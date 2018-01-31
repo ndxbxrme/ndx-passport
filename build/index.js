@@ -87,7 +87,7 @@
         }
       }, done);
     };
-    ndx.passport.createUser = function(email, password) {
+    ndx.passport.createUser = function(email, password, id) {
       var newUser;
       newUser = {
         email: email,
@@ -96,7 +96,7 @@
           password: ndx.generateHash(password)
         }
       };
-      newUser[ndx.settings.AUTO_ID] = ndx.generateID();
+      newUser[ndx.settings.AUTO_ID] = id;
       ndx.database.insert(ndx.settings.USER_TABLE, newUser, null, true);
       return newUser;
     };
@@ -173,11 +173,16 @@
       passReqToCallback: true
     }, function(req, email, password, done) {
       return ndx.passport.fetchByEmail(email, function(users) {
+        var id;
         if (users && users.length) {
           ndx.passport.loginMessage = 'That email is already taken.';
           return done(null, false);
         } else {
-          ndx.user = ndx.passport.createUser(email, password);
+          id = ndx.generateID();
+          if (ndx.settings.ANONYMOUS_USER && req.headers['anon-id']) {
+            id = req.headers['anon-id'];
+          }
+          ndx.user = ndx.passport.createUser(email, password, id);
           if (ndx.auth) {
             ndx.auth.extendUser(ndx.user);
           }
