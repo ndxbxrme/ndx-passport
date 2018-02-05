@@ -16,17 +16,19 @@
       updatePassword: [],
       invited: [],
       inviteAccepted: [],
-      inviteUserExists: []
+      inviteUserExists: [],
+      resetPassword: [],
+      resetPasswordRequest: []
     };
     ndx.passport = require('passport');
     LocalStrategy = require('passport-local').Strategy;
     usernameField = process.env.USERNAME_FIELD || ndx.settings.USERNAME_FIELD || 'email';
     passwordField = process.env.PASSWORD_FIELD || ndx.settings.PASSWORD_FIELD || 'password';
-    if (ndx.settings.HAS_FORGOT || process.env.HAS_FORGOT) {
-      require('./forgot')(ndx);
-    }
     if (ndx.settings.HAS_INVITE || process.env.HAS_INVITE) {
       require('./invite')(ndx);
+    }
+    if (ndx.settings.HAS_FORGOT || process.env.HAS_FORGOT) {
+      require('./forgot')(ndx);
     }
     syncCallback = function(name, obj, cb) {
       var callback, i, len, ref;

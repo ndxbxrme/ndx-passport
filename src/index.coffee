@@ -12,17 +12,19 @@ module.exports = (ndx) ->
     invited: []
     inviteAccepted: []
     inviteUserExists: []
+    resetPassword: []
+    resetPasswordRequest: []
   ndx.passport = require 'passport'
   LocalStrategy = require('passport-local').Strategy
   usernameField = process.env.USERNAME_FIELD or ndx.settings.USERNAME_FIELD or 'email'
   passwordField = process.env.PASSWORD_FIELD or ndx.settings.PASSWORD_FIELD or 'password'
-
-  if ndx.settings.HAS_FORGOT or process.env.HAS_FORGOT
-    require('./forgot') ndx
   
   if ndx.settings.HAS_INVITE or process.env.HAS_INVITE
     require('./invite') ndx
 
+  if ndx.settings.HAS_FORGOT or process.env.HAS_FORGOT
+    require('./forgot') ndx
+    
   syncCallback = (name, obj, cb) ->
     if callbacks[name] and callbacks[name].length
       for callback in callbacks[name]
