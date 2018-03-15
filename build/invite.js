@@ -110,6 +110,7 @@
         });
       });
       return ndx.app.post('/api/get-invite-code', ndx.authenticate(), function(req, res, next) {
+        delete req.body._id;
         return (function(user) {
           return ndx.passport.fetchByEmail(req.body.local.email, function(users) {
             var obj;
