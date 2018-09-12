@@ -139,7 +139,8 @@
                       subject: inviteTemplate.subject,
                       body: inviteTemplate.body,
                       data: req.body,
-                      code: host + "/invite/" + token
+                      code: host + "/invite/" + token,
+                      host: host
                     });
                   }
                   ndx.passport.syncCallback('invited', {

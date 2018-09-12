@@ -23,6 +23,7 @@ module.exports = (ndx) ->
                   subject: forgotTemplate.subject
                   body: forgotTemplate.body
                   code: "#{host}/forgot/#{token}"
+                  host: host
                   user: users[0]
                 ndx.passport.syncCallback 'resetPasswordRequest',
                   obj: users[0]
